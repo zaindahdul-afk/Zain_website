@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bell 206 JetRanger — 3D Wireframe Analysis</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:#020a10;color:#d0eeff;font-family:'Courier New',monospace;overflow-x:hidden;}
+
+#bg-canvas{
+  position:fixed;top:0;left:0;
+  width:100%;height:100%;
+  z-index:0;display:block;
+}
+
+/* ── HUD overlay ── */
+.hud{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  pointer-events:none;z-index:5;
+}
+.corner{
+  position:absolute;width:22px;height:22px;
+  border-color:rgba(0,229,255,0.25);border-style:solid;
+}
+.c-tl{top:18px;left:18px;border-width:1px 0 0 1px;}
+.c-tr{top:18px;right:18px;border-width:1px 1px 0 0;}
+.c-bl{bottom:18px;left:18px;border-width:0 0 1px 1px;}
+.c-br{bottom:18px;right:18px;border-width:0 1px 1px 0;}
+
+.hud-tl{
+  position:fixed;top:22px;left:26px;
+  font-size:0.6rem;letter-spacing:0.18em;
+  color:rgba(0,229,255,0.45);line-height:1.8;z-index:5;
+  pointer-events:none;
+}
+.hud-br{
+  position:fixed;bottom:22px;right:26px;
+  font-size:0.6rem;letter-spacing:0.18em;text-align:right;
+  color:rgba(0,229,255,0.35);line-height:1.8;z-index:5;
+  pointer-events:none;
+}
+#hud-pct{color:rgba(0,229,255,0.7);}
+
+/* Crosshair — visible only during cockpit phase */
+#crosshair{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:60px;height:60px;
+  pointer-events:none;z-index:5;
+  opacity:0;transition:opacity 0.6s;
+}
+#crosshair::before,#crosshair::after{
+  content:'';position:absolute;background:rgba(0,229,255,0.5);
+}
+#crosshair::before{left:50%;top:0;width:1px;height:100%;transform:translateX(-50%);}
+#crosshair::after{top:50%;left:0;height:1px;width:100%;transform:translateY(-50%);}
+.crosshair-ring{
+  position:absolute;inset:8px;
+  border:1px solid rgba(0,229,255,0.35);
+  border-radius:50%;
+}
+#crosshair.active{opacity:1;}
+
+/* ── Content layer ── */
+#content-layer{
+  position:relative;z-index:10;
+  pointer-events:none;
+}
+
+.section{
+  min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;text-align:center;
+  padding:2rem;
+}
+
+/* Section sizing to match scroll phases */
+.s1{min-height:100vh;}
+.s2{min-height:160vh;}
+.s3{min-height:180vh;}
+.s4{min-height:160vh;}
+
+/* ── Hero ── */
+.hero-eyebrow{
+  font-size:0.62rem;letter-spacing:0.45em;
+  text-transform:uppercase;color:rgba(0,229,255,0.6);
+  margin-bottom:1.8rem;
+}
+.hero-title{
+  font-size:clamp(3.5rem,11vw,9rem);
+  font-weight:200;letter-spacing:-0.03em;
+  color:#fff;line-height:0.88;
+}
+.hero-title em{color:#00e5ff;font-style:normal;}
+.hero-sub{
+  margin-top:1.6rem;
+  font-size:0.78rem;letter-spacing:0.25em;
+  text-transform:uppercase;color:rgba(180,220,255,0.4);
+}
+.scroll-cue{
+  margin-top:3.5rem;
+  display:flex;flex-direction:column;align-items:center;gap:0.5rem;
+  color:rgba(0,229,255,0.5);font-size:0.6rem;letter-spacing:0.3em;
+  text-transform:uppercase;
+  animation:scPulse 2.2s ease-in-out infinite;
+}
+.scroll-line{width:1px;height:52px;background:linear-gradient(to bottom,rgba(0,229,255,0.6),transparent);}
+@keyframes scPulse{0%,100%{opacity:0.4;transform:translateY(0);}50%{opacity:0.9;transform:translateY(5px);}}
+
+/* ── Info sections ── */
+.info-block{
+  max-width:520px;width:100%;
+  background:rgba(2,10,16,0.55);
+  border:1px solid rgba(0,229,255,0.1);
+  padding:2.4rem 2.8rem;
+  text-align:left;
+}
+.phase-label{
+  font-size:0.58rem;letter-spacing:0.5em;
+  text-transform:uppercase;color:#00e5ff;
+  margin-bottom:1rem;opacity:0.7;
+}
+.section-h{
+  font-size:clamp(1.6rem,3.5vw,2.6rem);
+  font-weight:200;color:#fff;
+  line-height:1.1;margin-bottom:1rem;
+  letter-spacing:-0.02em;
+}
+.section-body{
+  font-size:0.78rem;color:rgba(190,225,255,0.45);
+  line-height:2.0;letter-spacing:0.04em;
+  margin-bottom:1.5rem;
+}
+.spec-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:1px;background:rgba(0,229,255,0.08);
+  border:1px solid rgba(0,229,255,0.08);
+  pointer-events:auto;
+}
+.spec-item{
+  padding:0.8rem 1rem;
+  background:rgba(2,10,16,0.8);
+}
+.spec-k{font-size:0.55rem;letter-spacing:0.28em;text-transform:uppercase;color:rgba(0,229,255,0.5);margin-bottom:0.3rem;}
+.spec-v{font-size:0.85rem;color:#e0f4ff;}
+
+/* Part list */
+.part-list{
+  display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.5rem;
+}
+.part-tag{
+  font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;
+  border:1px solid rgba(0,229,255,0.18);
+  color:rgba(0,229,255,0.5);padding:0.3rem 0.7rem;
+}
+
+/* Reveal animation */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity 0.9s ease,transform 0.9s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+/* Scan line effect */
+body::after{
+  content:'';position:fixed;inset:0;z-index:999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
+  pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- HUD -->
+<div class="hud">
+  <div class="corner c-tl"></div>
+  <div class="corner c-tr"></div>
+  <div class="corner c-bl"></div>
+  <div class="corner c-br"></div>
+</div>
+<div class="hud-tl">
+  <div>BELL 206 JETRANGER III</div>
+  <div>WIREFRAME · STRUCTURAL ANALYSIS</div>
+</div>
+<div class="hud-br">
+  <div id="hud-pct">SCROLL 0%</div>
+  <div id="hud-phase">PHASE · OVERVIEW</div>
+</div>
+<div id="crosshair"><div class="crosshair-ring"></div></div>
+
+<!-- Content -->
+<div id="content-layer">
+
+  <!-- S1: Hero -->
+  <section class="section s1">
+    <p class="hero-eyebrow">Technical Schematic &nbsp;/&nbsp; Bell 206 JetRanger</p>
+    <h1 class="hero-title">THE<br><em>GADGET</em></h1>
+    <p class="hero-sub">3D wireframe deconstruction</p>
+    <div class="scroll-cue">
+      <div class="scroll-line"></div>
+      <span>Scroll to begin</span>
+    </div>
+  </section>
+
+  <!-- S2: Cockpit -->
+  <section class="section s2">
+    <div class="info-block reveal">
+      <p class="phase-label">Phase 01 &nbsp;/&nbsp; Cockpit Interface</p>
+      <h2 class="section-h">Control Hub</h2>
+      <p class="section-body">
+        Dual flight controls with cyclic pitch stick, collective lever, and
+        anti-torque pedals. A 14-instrument primary avionics cluster provides
+        full IFR capability in a compact forward panel.
+      </p>
+      <div class="spec-grid">
+        <div class="spec-item"><div class="spec-k">Crew</div><div class="spec-v">1 Pilot + 4 PAX</div></div>
+        <div class="spec-item"><div class="spec-k">Engine</div><div class="spec-v">Allison 250-C20B</div></div>
+        <div class="spec-item"><div class="spec-k">Power</div><div class="spec-v">420 shp</div></div>
+        <div class="spec-item"><div class="spec-k">MTOW</div><div class="spec-v">1,451 kg</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S3: Explode -->
+  <section class="section s3">
+    <div class="info-block reveal">
+      <p class="phase-label">Phase 02 &nbsp;/&nbsp; Component Analysis</p>
+      <h2 class="section-h">Deconstructing<br>Components</h2>
+      <p class="section-body">
+        Isolating primary airframe assemblies along natural axis vectors,
+        revealing the internal architecture of the Bell 206 airframe system.
+      </p>
+      <div class="part-list">
+        <span class="part-tag">Fuselage</span>
+        <span class="part-tag">Cockpit</span>
+        <span class="part-tag">Engine Bay</span>
+        <span class="part-tag">Transmission</span>
+        <span class="part-tag">Main Rotor</span>
+        <span class="part-tag">Tail Boom</span>
+        <span class="part-tag">Tail Fin</span>
+        <span class="part-tag">Tail Rotor</span>
+        <span class="part-tag">Skid L</span>
+        <span class="part-tag">Skid R</span>
+        <span class="part-tag">Controls</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- S4: Final -->
+  <section class="section s4">
+    <div class="info-block reveal">
+      <p class="phase-label">Phase 03 &nbsp;/&nbsp; Full Assembly Diagram</p>
+      <h2 class="section-h">11 Component<br>Groups Isolated</h2>
+      <p class="section-body">
+        Complete structural decomposition achieved. Each assembly group
+        confirmed nominal. Ready for maintenance inspection or reassembly.
+      </p>
+      <div class="spec-grid">
+        <div class="spec-item"><div class="spec-k">Rotor Span</div><div class="spec-v">10.16 m</div></div>
+        <div class="spec-item"><div class="spec-k">Length</div><div class="spec-v">11.82 m</div></div>
+        <div class="spec-item"><div class="spec-k">Height</div><div class="spec-v">2.91 m</div></div>
+        <div class="spec-item"><div class="spec-k">Range</div><div class="spec-v">748 km</div></div>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /content-layer -->
+
+<!-- Dependencies -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// ─── Renderer ────────────────────────────────────────────────────────────────
+const canvas = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.setClearColor(0x020a10, 1);
+
+const scene = new THREE.Scene();
+
+// Subtle fog
+scene.fog = new THREE.FogExp2(0x020a10, 0.025);
+
+// ─── Camera ───────────────────────────────────────────────────────────────────
+const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.05, 500);
+camera.position.set(7, 3.5, 9);
+
+// Animated lookat target
+const lookTarget = { x: 0, y: 0.3, z: -1.5 };
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ─── Materials ────────────────────────────────────────────────────────────────
+const C_MAIN   = 0x00e5ff;   // cyan main
+const C_DIM    = 0x004455;   // dim structural
+const C_BRIGHT = 0x80ffff;   // bright accent
+const C_PULSE  = 0x00ffcc;   // controls pulse
+
+function mat(hex, opacity){ return new THREE.LineBasicMaterial({ color: hex, transparent: opacity < 1, opacity: opacity || 1 }); }
+
+const mMain   = mat(C_MAIN);
+const mDim    = mat(C_DIM);
+const mBright = mat(C_BRIGHT);
+const mCtrl   = mat(C_PULSE); // pulsing material for controls
+
+// ─── Geometry helpers ─────────────────────────────────────────────────────────
+function edges(geo, m){ return new THREE.LineSegments(new THREE.EdgesGeometry(geo), m); }
+function box(w,h,d,m){ return edges(new THREE.BoxGeometry(w,h,d), m || mMain); }
+function cyl(rt,rb,h,s,m){ return edges(new THREE.CylinderGeometry(rt,rb,h,s||8), m || mMain); }
+function sph(r,ws,hs,m){ return edges(new THREE.SphereGeometry(r,ws||6,hs||4), m || mMain); }
+
+function place(group, mesh, x,y,z, rx,ry,rz){
+  mesh.position.set(x,y,z);
+  if(rx !== undefined) mesh.rotation.set(rx,ry,rz);
+  group.add(mesh);
+  return mesh;
+}
+
+// ─── Helicopter master group ──────────────────────────────────────────────────
+const heli = new THREE.Group();
+scene.add(heli);
+
+// Pre-orient for good isometric view
+heli.rotation.y = 0.3;
+heli.position.y = -0.3;
+
+// ─── Component groups ─────────────────────────────────────────────────────────
+
+// ── 1. Fuselage (core body — stays in place during explode) ──
+const gFuse = new THREE.Group();
+heli.add(gFuse);
+
+// Main cabin shape: tapered box
+place(gFuse, box(1.45, 0.95, 2.9, mMain), 0, 0, -0.25);
+// Engine deck / cowling (top rear)
+place(gFuse, box(0.85, 0.48, 1.35, mMain), 0, 0.71, -1.0);
+// Engine air intake detail
+place(gFuse, box(0.78, 0.18, 0.2, mDim), 0, 0.85, -0.25);
+// Belly / underside structure
+place(gFuse, box(1.2, 0.12, 2.5, mDim), 0, -0.53, -0.3);
+// Cabin rear bulkhead
+place(gFuse, box(1.45, 0.95, 0.06, mDim), 0, 0, -1.7);
+// Firewall
+place(gFuse, box(1.45, 0.95, 0.06, mDim), 0, 0, 0.75);
+
+// ── 2. Cockpit bubble ──
+const gCockpit = new THREE.Group();
+heli.add(gCockpit);
+
+// Main bubble — low-poly sphere (front half)
+const bubbleGeo = new THREE.SphereGeometry(0.76, 7, 5, 0, Math.PI * 1.1, 0, Math.PI * 0.75);
+place(gCockpit, edges(bubbleGeo, mMain), 0, 0.06, 1.38);
+// Windshield center post
+place(gCockpit, box(0.04, 0.82, 0.04, mBright), 0, 0.18, 0.88);
+// Lower chin
+place(gCockpit, box(1.35, 0.1, 0.75, mDim), 0, -0.4, 1.2);
+// Windshield top rail
+place(gCockpit, box(1.3, 0.06, 0.06, mBright), 0, 0.6, 0.88);
+// Door frame L
+place(gCockpit, box(0.06, 0.82, 1.1, mMain), -0.72, 0.08, 0.42);
+// Door frame R
+place(gCockpit, box(0.06, 0.82, 1.1, mMain),  0.72, 0.08, 0.42);
+
+// ── 3. Left Door ──
+const gDoorL = new THREE.Group();
+heli.add(gDoorL);
+place(gDoorL, box(0.055, 0.72, 1.15, mMain), -0.74, 0.06, 0.42);
+place(gDoorL, box(0.055, 0.32, 0.52, mDim), -0.74, 0.22, 0.4); // window cutout
+
+// ── 4. Right Door ──
+const gDoorR = new THREE.Group();
+heli.add(gDoorR);
+place(gDoorR, box(0.055, 0.72, 1.15, mMain),  0.74, 0.06, 0.42);
+place(gDoorR, box(0.055, 0.32, 0.52, mDim),  0.74, 0.22, 0.4);
+
+// ── 5. Pilot Controls (cyclic, seat, instruments) ──
+const gCtrl = new THREE.Group();
+heli.add(gCtrl);
+
+// Seat pan (pilot left seat)
+place(gCtrl, box(0.52, 0.07, 0.5, mCtrl), -0.28, -0.12, 0.55);
+// Seatback
+place(gCtrl, box(0.52, 0.62, 0.07, mCtrl), -0.28, 0.19, 0.33);
+// Cyclic stick (center, tilts slightly)
+const cyclicGeo = new THREE.CylinderGeometry(0.022, 0.03, 0.52, 6);
+place(gCtrl, edges(cyclicGeo, mBright), -0.08, -0.01, 0.62, 0.12, 0, 0);
+// Cyclic grip
+place(gCtrl, box(0.15, 0.08, 0.08, mBright), -0.08, 0.25, 0.66);
+// Collective lever (left side, angled)
+const collectGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.6, 6);
+place(gCtrl, edges(collectGeo, mCtrl), -0.52, -0.03, 0.48, 0, 0, -0.38);
+// Instrument panel
+place(gCtrl, box(1.22, 0.62, 0.06, mBright), 0, 0.14, 0.9);
+// Panel instrument rows
+place(gCtrl, box(1.12, 0.07, 0.06, mDim), 0,  0.32, 0.91);
+place(gCtrl, box(1.12, 0.07, 0.06, mDim), 0,  0.14, 0.91);
+place(gCtrl, box(1.12, 0.07, 0.06, mDim), 0, -0.06, 0.91);
+// Panel vertical dividers
+place(gCtrl, box(0.06, 0.62, 0.06, mDim), -0.38, 0.14, 0.91);
+place(gCtrl, box(0.06, 0.62, 0.06, mDim),  0.38, 0.14, 0.91);
+
+// ── 6. Rotor Mast ──
+const gMast = new THREE.Group();
+heli.add(gMast);
+// Mast tube
+place(gMast, cyl(0.07, 0.09, 0.85, 8, mMain), 0, 1.25, -0.42);
+// Transmission housing
+place(gMast, cyl(0.22, 0.26, 0.35, 8, mMain), 0, 0.96, -0.42);
+// Rotor hub plate
+place(gMast, cyl(0.2, 0.2, 0.1, 8, mBright), 0, 1.7, -0.42);
+// Pitch change links (2)
+for(let i=0;i<2;i++){
+  const a = i * Math.PI;
+  place(gMast, cyl(0.022, 0.022, 0.28, 5, mDim),
+    Math.cos(a)*0.3, 1.56, -0.42 + Math.sin(a)*0.3);
+}
+
+// ── 7. Main Rotor Blades ──
+const gRotor = new THREE.Group();
+gRotor.position.set(0, 1.7, -0.42); // group origin = mast head = rotation axis
+heli.add(gRotor);
+// Children now in local space (offset from mast center)
+place(gRotor, box(4.1, 0.07, 0.24, mMain),  2.25, 0,     0);
+place(gRotor, box(4.1, 0.04, 0.18, mDim),   2.25, -0.06, 0);
+place(gRotor, box(4.1, 0.07, 0.24, mMain), -2.25, 0,     0);
+place(gRotor, box(4.1, 0.04, 0.18, mDim),  -2.25, -0.06, 0);
+// Droop stops
+place(gRotor, cyl(0.04, 0.04, 0.22, 5, mDim),  0.8, 0, 0);
+place(gRotor, cyl(0.04, 0.04, 0.22, 5, mDim), -0.8, 0, 0);
+
+// ── 8. Tail Boom ──
+const gBoom = new THREE.Group();
+heli.add(gBoom);
+// Main boom taper
+place(gBoom, cyl(0.14, 0.30, 3.85, 8, mMain), 0, -0.08, -2.82, Math.PI*0.5, 0, 0);
+// Boom rings (structural bulkheads)
+place(gBoom, cyl(0.28, 0.28, 0.05, 8, mDim), 0, -0.08, -1.9);
+place(gBoom, cyl(0.22, 0.22, 0.05, 8, mDim), 0, -0.08, -2.65);
+place(gBoom, cyl(0.17, 0.17, 0.05, 8, mDim), 0, -0.08, -3.4);
+// Tail light
+place(gBoom, box(0.1, 0.1, 0.1, mBright), 0, -0.08, -4.7);
+
+// ── 9. Tail Fin ──
+const gFin = new THREE.Group();
+heli.add(gFin);
+// Vertical fin
+place(gFin, box(0.065, 1.05, 0.72, mMain), 0, 0.38, -4.66);
+// Horizontal stabilizer
+place(gFin, box(1.75, 0.065, 0.42, mMain), 0, -0.04, -4.52);
+// Skid (anti-torque rudder)
+place(gFin, box(0.065, 0.28, 0.38, mDim), 0, -0.32, -4.52);
+// Root fillet
+place(gFin, box(0.065, 0.35, 0.35, mDim), 0, -0.18, -4.3);
+
+// ── 10. Tail Rotor ──
+const gTRot = new THREE.Group();
+gTRot.position.set(0.18, 0.55, -4.66); // group origin = tail rotor hub = rotation axis
+heli.add(gTRot);
+// Hub cylinder — axis along X (rotated from default Y-axis)
+const trHubGeo = new THREE.CylinderGeometry(0.1, 0.1, 0.14, 8);
+place(gTRot, edges(trHubGeo, mMain), 0, 0, 0, 0, 0, Math.PI*0.5);
+// 2 blades in local Y-Z plane; rotation.x sweeps them correctly
+place(gTRot, box(0.08, 1.25, 0.1, mMain), 0, 0, 0);   // blade A (Y-elongated)
+place(gTRot, box(0.08, 0.1, 1.25, mMain), 0, 0, 0);   // blade B (Z-elongated, 90° offset)
+// Pitch horn
+place(gTRot, cyl(0.02, 0.02, 0.28, 5, mDim), 0, 0.27, 0, 0, 0, 0.35);
+
+// ── 11. Left Skid ──
+const gSkidL = new THREE.Group();
+heli.add(gSkidL);
+// Main skid bar
+place(gSkidL, box(0.045, 0.045, 3.4, mMain), -0.74, -0.78, -0.2);
+// Forward strut
+place(gSkidL, cyl(0.028, 0.028, 0.52, 5, mMain), -0.74, -0.55, 0.68, 0, 0, 0.14);
+// Rear strut
+place(gSkidL, cyl(0.028, 0.028, 0.52, 5, mMain), -0.74, -0.55, -0.92, 0, 0, -0.08);
+// Skid tip
+place(gSkidL, box(0.045, 0.045, 0.5, mDim), -0.74, -0.78, 1.32);
+
+// ── 12. Right Skid ──
+const gSkidR = new THREE.Group();
+heli.add(gSkidR);
+place(gSkidR, box(0.045, 0.045, 3.4, mMain),  0.74, -0.78, -0.2);
+place(gSkidR, cyl(0.028, 0.028, 0.52, 5, mMain),  0.74, -0.55, 0.68, 0, 0, -0.14);
+place(gSkidR, cyl(0.028, 0.028, 0.52, 5, mMain),  0.74, -0.55, -0.92, 0, 0, 0.08);
+place(gSkidR, box(0.045, 0.045, 0.5, mDim),  0.74, -0.78, 1.32);
+
+// Cross-tubes (part of fuselage group)
+place(gFuse, box(1.52, 0.04, 0.04, mDim), 0, -0.55, 0.68);
+place(gFuse, box(1.52, 0.04, 0.04, mDim), 0, -0.55, -0.92);
+
+// ─── Component list for exploded-view animation ───────────────────────────────
+const parts = [
+  { g: gFuse,    ex: new THREE.Vector3( 0,    -0.3,  0   ) },  // subtle settle
+  { g: gCockpit, ex: new THREE.Vector3( 0,     0.8,  3.2 ) },  // forward + up
+  { g: gDoorL,   ex: new THREE.Vector3(-3.8,   0.3,  0.4 ) },  // left
+  { g: gDoorR,   ex: new THREE.Vector3( 3.8,   0.3,  0.4 ) },  // right
+  { g: gCtrl,    ex: new THREE.Vector3( 0,    -2.2,  2.8 ) },  // forward down
+  { g: gMast,    ex: new THREE.Vector3( 0,     3.0, -0.4 ) },  // straight up
+  { g: gRotor,   ex: new THREE.Vector3( 0,     4.8, -0.4 ) },  // high up
+  { g: gBoom,    ex: new THREE.Vector3( 0.2,  -0.8, -5.2 ) },  // back
+  { g: gFin,     ex: new THREE.Vector3( 0.8,   2.2, -7.5 ) },  // back + up
+  { g: gTRot,    ex: new THREE.Vector3( 2.2,   2.8, -8.2 ) },  // back + right + up
+  { g: gSkidL,   ex: new THREE.Vector3(-3.2,  -2.8,  0   ) },  // left + down
+  { g: gSkidR,   ex: new THREE.Vector3( 3.2,  -2.8,  0   ) },  // right + down
+];
+
+// ─── Subtle ambient particles ─────────────────────────────────────────────────
+const ptGeo = new THREE.BufferGeometry();
+const ptArr = [];
+for(let i=0;i<220;i++){
+  ptArr.push((Math.random()-0.5)*30,(Math.random()-0.5)*20,(Math.random()-0.5)*30);
+}
+ptGeo.setAttribute('position', new THREE.Float32BufferAttribute(ptArr, 3));
+const ptMat = new THREE.PointsMaterial({ color: 0x003344, size: 0.04 });
+scene.add(new THREE.Points(ptGeo, ptMat));
+
+// ─── GSAP ScrollTrigger ───────────────────────────────────────────────────────
+const scrollState = { progress: 0 };
+
+const tl = gsap.timeline({
+  scrollTrigger: {
+    trigger: document.body,
+    start: 'top top',
+    end: 'bottom bottom',
+    scrub: 1.5,
+    onUpdate(self) {
+      scrollState.progress = self.progress;
+      const pct = Math.round(self.progress * 100);
+      document.getElementById('hud-pct').textContent = 'SCROLL ' + pct + '%';
+      const phase = pct < 12 ? 'OVERVIEW' : pct < 52 ? 'COCKPIT' : pct < 85 ? 'DECONSTRUCT' : 'ASSEMBLY';
+      document.getElementById('hud-phase').textContent = 'PHASE · ' + phase;
+      // Crosshair
+      const xh = document.getElementById('crosshair');
+      if(pct > 20 && pct < 55) xh.classList.add('active');
+      else xh.classList.remove('active');
+    }
+  }
+});
+
+// ── Phase 0-10%: gentle tilt, camera static ──
+tl.to(heli.rotation, { y: 0.5, duration: 1, ease: 'none' }, 0);
+
+// ── Phase 10-50%: camera zooms to cockpit ──
+tl.to(camera.position, { x: 1.8, y: 0.8, z: 3.6, duration: 4, ease: 'power2.inOut' }, 1);
+tl.to(lookTarget,      { x: 0,   y: 0.1, z: 0.8, duration: 4, ease: 'power2.inOut' }, 1);
+tl.to(heli.rotation,   { y: 0.6, duration: 4, ease: 'power2.inOut' }, 1);
+
+// ── Phase 50-55%: camera pulls back for explode ──
+tl.to(camera.position, { x: 10, y: 5.5, z: 14, duration: 1.5, ease: 'power3.inOut' }, 5);
+tl.to(lookTarget,      { x: 0,  y: 1.0, z: -2, duration: 1.5, ease: 'power3.inOut' }, 5);
+tl.to(heli.rotation,   { y: 0.9, duration: 1.5 }, 5);
+
+// ── Phase 55-85%: explode all parts ──
+parts.forEach((p, i) => {
+  const t = 5.5 + i * 0.12;
+  tl.to(p.g.position, { x: p.ex.x, y: p.ex.y, z: p.ex.z, duration: 2.8, ease: 'power3.out' }, t);
+});
+
+// ── Phase 85-100%: final rotation ──
+tl.to(heli.rotation, { y: 1.4, duration: 2, ease: 'power1.inOut' }, 8.5);
+
+// ─── Reveal on scroll ─────────────────────────────────────────────────────────
+document.querySelectorAll('.reveal').forEach(el => {
+  ScrollTrigger.create({
+    trigger: el,
+    start: 'top 78%',
+    onEnter: () => el.classList.add('visible'),
+  });
+});
+
+// ─── Render loop ──────────────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+
+// Tail rotor auto-spin
+let tailRotorAngle = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  const t  = clock.getElapsedTime();
+  const p  = scrollState.progress;
+
+  // Slow ambient heli wobble when at overview (p < 0.1)
+  if(p < 0.08) {
+    heli.rotation.x = Math.sin(t * 0.4) * 0.015;
+  }
+
+  // Tail rotor always spins
+  tailRotorAngle += dt * 18;
+  gTRot.rotation.x = tailRotorAngle; // X-axis = correct spin axis for side-mounted tail rotor
+
+  // Main rotor slow spin during overview, faster when scrolling
+  const rotorSpeed = p < 0.08 ? 0.8 : p < 0.5 ? 0.4 : 0.15;
+  gRotor.rotation.y += dt * rotorSpeed;
+
+  // Controls pulse: oscillate mCtrl color when in cockpit phase
+  if(p > 0.18 && p < 0.58) {
+    const pulse = 0.55 + 0.45 * Math.sin(t * 3.5);
+    mCtrl.color.setRGB(pulse * 0.1, 1.0, 0.85 + pulse * 0.15);
+  } else {
+    mCtrl.color.setRGB(0, 0.9, 0.8);
+  }
+
+  // LookAt
+  camera.lookAt(new THREE.Vector3(lookTarget.x, lookTarget.y, lookTarget.z));
+  renderer.render(scene, camera);
+}
+
+animate();
+</script>
+</body>
+</html>
