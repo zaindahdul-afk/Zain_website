@@ -85,7 +85,7 @@
     }
     .cursor-hover #cr { width: 48px; height: 48px; border-color: rgba(0,113,227,.6); background: rgba(0,113,227,.06); }
 
-    /* ── HUD (wireframe zone only) ── */
+    /* ── HUD corners ── */
     .hud-corners { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
     .hud-corner {
       position: absolute; width: 20px; height: 20px;
@@ -96,6 +96,8 @@
     .hc-tr { top: 18px; right: 18px; border-width: 1px 1px 0 0; }
     .hc-bl { bottom: 18px; left: 18px; border-width: 0 0 1px 1px; }
     .hc-br { bottom: 18px; right: 18px; border-width: 0 1px 1px 0; }
+
+    /* ── HUD labels (top-left / bottom-right) ── */
     .hud-label-tl {
       position: fixed; top: 22px; left: 24px;
       font-size: .58rem; letter-spacing: .18em; text-transform: uppercase;
@@ -107,6 +109,40 @@
       color: rgba(0,229,255,.35); line-height: 1.9; z-index: 5; pointer-events: none;
     }
     #hud-pct { color: rgba(0,229,255,.65); }
+
+    /* ── HUD left readout (visible during systems check) ── */
+    #hud-readout {
+      position: fixed; left: 24px; top: 50%;
+      transform: translateY(-50%);
+      font-size: .58rem; letter-spacing: .2em; text-transform: uppercase;
+      color: rgba(0,229,255,.3); line-height: 2.4; z-index: 5; pointer-events: none;
+      opacity: 0; transition: opacity .6s;
+    }
+    #hud-readout.active { opacity: 1; }
+    #hud-readout span { color: rgba(0,229,255,.75); }
+
+    /* ── HUD center part label (visible during systems check) ── */
+    #hud-part-label {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center; pointer-events: none; z-index: 5;
+      opacity: 0; transition: opacity .35s;
+    }
+    #hud-part-label.active { opacity: 1; }
+    #hud-part-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.3rem, 3vw, 2rem);
+      font-weight: 300; color: #fff;
+      letter-spacing: .3em; text-transform: uppercase;
+      text-shadow: 0 0 40px rgba(0,229,255,.7), 0 0 80px rgba(0,229,255,.3);
+    }
+    #hud-part-spec {
+      font-size: .55rem; letter-spacing: .38em;
+      color: rgba(0,229,255,.5); margin-top: .5rem;
+      text-transform: uppercase;
+    }
+
+    /* ── Crosshair ── */
     #crosshair {
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%,-50%);
@@ -207,7 +243,7 @@
     .wf-section {
       position: relative; z-index: 2;
       display: flex; align-items: center;
-      padding: 4rem 5vw; min-height: 160vh;
+      padding: 4rem 5vw;
       background: transparent;
     }
     .wf-section.align-right  { justify-content: flex-end; }
@@ -273,7 +309,7 @@
     .wf-scroll-arrow svg { width: 16px; height: 16px; }
     @keyframes arrowPulse { 0%,100% { opacity: .4; transform: translateY(0); } 50% { opacity: .9; transform: translateY(5px); } }
 
-    /* Scan lines */
+    /* Scan lines overlay */
     body::after {
       content: ''; position: fixed; inset: 0; z-index: 3;
       background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.025) 2px,rgba(0,0,0,.025) 4px);
@@ -415,8 +451,9 @@
       .about-grid { grid-template-columns: 1fr; gap: 3rem; }
       .skills-grid { grid-template-columns: 1fr 1fr; }
       .edu-wrapper,.vol-wrapper { grid-template-columns: 1fr; }
-      .wf-section { padding: 4rem 1.5rem; min-height: 110vh; }
+      .wf-section { padding: 4rem 1.5rem; }
       footer { flex-direction: column; gap: .8rem; text-align: center; padding: 1.5rem; }
+      #hud-readout { display: none; }
     }
     @media (max-width: 540px) {
       .skills-grid { grid-template-columns: 1fr; }
@@ -427,21 +464,16 @@
 </head>
 <body>
 
-<!-- Three.js wireframe canvas (background for first 4 sections) -->
 <canvas id="bg-canvas"></canvas>
-
-<!-- Flow-field canvas (fades in after wireframe zone) -->
 <canvas id="canvas-bg"></canvas>
 
-<!-- Orbs -->
 <div class="orb orb-1"></div>
 <div class="orb orb-2"></div>
 <div class="orb orb-3"></div>
 
-<!-- Custom cursor -->
 <div id="cursor"><div id="cd"></div><div id="cr"></div></div>
 
-<!-- Wireframe HUD (visible only during wireframe zone via opacity) -->
+<!-- HUD overlay -->
 <div class="hud-corners">
   <div class="hud-corner hc-tl"></div>
   <div class="hud-corner hc-tr"></div>
@@ -456,9 +488,23 @@
   <div id="hud-pct">0%</div>
   <div id="hud-phase">OVERVIEW</div>
 </div>
+
+<!-- Left readout (visible during systems check) -->
+<div id="hud-readout">
+  <div>RPM &nbsp;<span id="hud-rpm">—</span></div>
+  <div>SYS &nbsp;<span id="hud-sys">STANDBY</span></div>
+  <div>SEQ &nbsp;<span id="hud-seq">OVERVIEW</span></div>
+  <div>COMP &nbsp;<span id="hud-comp">18</span></div>
+</div>
+
+<!-- Center part label (visible during systems check) -->
+<div id="hud-part-label">
+  <div id="hud-part-name"></div>
+  <div id="hud-part-spec"></div>
+</div>
+
 <div id="crosshair"><div class="ch-ring"></div></div>
 
-<!-- Nav -->
 <nav id="navbar">
   <div class="nav-logo">Zain Dahdul</div>
   <ul class="nav-links">
@@ -470,11 +516,11 @@
   </ul>
 </nav>
 
-<!-- ══════════ WIREFRAME ZONE ══════════ -->
+<!-- ══════════ WIREFRAME ZONE (750vh) ══════════ -->
 <div id="wireframe-zone">
 
   <!-- S1 · Hero (100vh) -->
-  <section id="hero">
+  <section id="hero" style="min-height:100vh;">
     <div class="hero-inner">
       <p class="hero-eyebrow">Mechanical Engineer &nbsp;·&nbsp; Ocean Lifeguard &nbsp;·&nbsp; UC Berkeley</p>
       <h1 class="hero-name">Zain Dahdul</h1>
@@ -494,8 +540,36 @@
     </div>
   </section>
 
-  <!-- S2 · Cockpit / About teaser (160vh) — camera zooms to cockpit -->
-  <section class="wf-section align-right" id="wf-cockpit">
+  <!-- S2 · Systems orbit (200vh) — camera orbits, parts highlighted -->
+  <section class="wf-section align-right" id="wf-orbit" style="min-height:200vh;">
+    <div class="wf-panel reveal">
+      <span class="wf-label">00 &nbsp;/&nbsp; Systems Check</span>
+      <h2 class="wf-title">18 systems.<br>One structure.</h2>
+      <div class="wf-divider"></div>
+      <p class="wf-body">
+        Full structural sweep of the Bell 206 JetRanger III —
+        engine drivetrain, flight controls, rotor assembly,
+        and airframe analyzed component by component.
+      </p>
+      <div class="wf-stats">
+        <div>
+          <div class="wf-stat-num">18</div>
+          <div class="wf-stat-key">Components</div>
+        </div>
+        <div>
+          <div class="wf-stat-num">206</div>
+          <div class="wf-stat-key">Bell Model</div>
+        </div>
+        <div>
+          <div class="wf-stat-num">317</div>
+          <div class="wf-stat-key">SHP Engine</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S3 · Cockpit zoom (160vh) -->
+  <section class="wf-section align-right" id="wf-cockpit" style="min-height:160vh;">
     <div class="wf-panel reveal">
       <span class="wf-label">01 &nbsp;/&nbsp; Profile Overview</span>
       <h2 class="wf-title">Engineering<br>meets action</h2>
@@ -522,8 +596,8 @@
     </div>
   </section>
 
-  <!-- S3 · Deconstruct / Skills teaser (180vh) — helicopter explodes -->
-  <section class="wf-section align-left" id="wf-deconstruct">
+  <!-- S4 · Deconstruct (180vh) — exploded view -->
+  <section class="wf-section align-left" id="wf-deconstruct" style="min-height:180vh;">
     <div class="wf-panel reveal">
       <span class="wf-label">02 &nbsp;/&nbsp; Capabilities</span>
       <h2 class="wf-title">Deconstructing<br>the toolkit</h2>
@@ -545,10 +619,10 @@
     </div>
   </section>
 
-  <!-- S4 · Final / CTA (110vh) — fully exploded view -->
-  <section class="wf-section align-center" id="wf-final">
+  <!-- S5 · Final CTA (110vh) — reassembled -->
+  <section class="wf-section align-center" id="wf-final" style="min-height:110vh;">
     <div>
-      <p class="wf-label" style="text-align:center;letter-spacing:.5em;">Bell 206 &nbsp;·&nbsp; 11 Components Isolated</p>
+      <p class="wf-label" style="text-align:center;letter-spacing:.5em;">Bell 206 &nbsp;·&nbsp; 18 Components Isolated</p>
       <h2 class="wf-final-title">Full Profile<br>Below</h2>
       <a href="#about" class="wf-scroll-arrow">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v12M3 9l5 5 5-5"/></svg>
@@ -562,7 +636,6 @@
 
 <!-- ══════════ PORTFOLIO ══════════ -->
 
-<!-- Marquee -->
 <div class="marquee-wrap">
   <div class="marquee-track">
     <span class="marquee-item">UC Berkeley<span> / </span></span>
@@ -588,7 +661,6 @@
   </div>
 </div>
 
-<!-- Stats -->
 <section id="stats">
   <div class="stats-grid">
     <div class="stat-item"><div class="stat-number" data-target="4.8">0</div><div class="stat-label">Weighted GPA</div></div>
@@ -599,7 +671,6 @@
   </div>
 </section>
 
-<!-- About -->
 <section id="about">
   <div class="about-inner">
     <div class="section-header reveal">
@@ -649,7 +720,6 @@
   </div>
 </section>
 
-<!-- Experience -->
 <section id="experience">
   <div class="exp-wrapper">
     <div class="section-header reveal">
@@ -688,7 +758,6 @@
   </div>
 </section>
 
-<!-- Skills -->
 <section id="skills">
   <div class="skills-wrapper">
     <div class="section-header reveal">
@@ -737,7 +806,6 @@
   </div>
 </section>
 
-<!-- Education -->
 <section id="education">
   <div style="max-width:1000px;margin:0 auto;">
     <div class="section-header reveal">
@@ -771,7 +839,6 @@
   </div>
 </section>
 
-<!-- Volunteer -->
 <section id="volunteer">
   <div style="max-width:960px;margin:0 auto;">
     <div class="section-header reveal">
@@ -794,7 +861,6 @@
   </div>
 </section>
 
-<!-- Contact -->
 <section id="contact">
   <div class="contact-inner">
     <div class="section-header reveal">
@@ -834,7 +900,7 @@
 gsap.registerPlugin(ScrollTrigger);
 
 /* ══════════════════════════════════════════════════════════════
-   THREE.JS — Bell 206 wireframe background
+   THREE.JS — Bell 206 wireframe background (enhanced)
 ══════════════════════════════════════════════════════════════ */
 (function() {
   const canvas = document.getElementById('bg-canvas');
@@ -844,11 +910,11 @@ gsap.registerPlugin(ScrollTrigger);
   renderer.setClearColor(0x000000, 1);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x000000, 0.022);
+  scene.fog = new THREE.FogExp2(0x000000, 0.018);
 
   const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.05, 500);
   camera.position.set(7, 3.5, 9);
-  const lookTarget = { x: 0, y: 0.3, z: -1.5 };
+  const lookTarget = { x: 0, y: 0.3, z: -1 };
 
   window.addEventListener('resize', () => {
     camera.aspect = innerWidth / innerHeight;
@@ -856,155 +922,307 @@ gsap.registerPlugin(ScrollTrigger);
     renderer.setSize(innerWidth, innerHeight);
   });
 
-  /* Materials */
+  /* ── Materials ── */
   function mat(hex) { return new THREE.LineBasicMaterial({ color: hex }); }
-  const mMain   = mat(0x00e5ff);
-  const mDim    = mat(0x004455);
-  const mBright = mat(0x80ffff);
-  const mCtrl   = mat(0x00ffcc);
+  const mMain   = mat(0x000000); // start black, revealed by scan
+  const mDim    = mat(0x000000);
+  const mBright = mat(0x000000);
+  const mCtrl   = mat(0x000000);
+  const mAnnot  = new THREE.LineBasicMaterial({ color: 0x004466, transparent: true, opacity: 0 });
+  const mGrid   = new THREE.LineBasicMaterial({ color: 0x001122, transparent: true, opacity: 0 });
 
-  /* Helpers */
+  /* ── Geometry helpers ── */
   function edges(geo, m) { return new THREE.LineSegments(new THREE.EdgesGeometry(geo), m); }
   function box(w,h,d,m)  { return edges(new THREE.BoxGeometry(w,h,d), m||mMain); }
   function cyl(rt,rb,h,s,m){ return edges(new THREE.CylinderGeometry(rt,rb,h,s||8), m||mMain); }
-
   function place(g, mesh, x, y, z, rx, ry, rz) {
     mesh.position.set(x, y, z);
     if (rx !== undefined) mesh.rotation.set(rx, ry, rz);
     g.add(mesh);
   }
 
-  /* Helicopter master */
+  /* ── Helicopter master group ── */
   const heli = new THREE.Group();
   heli.rotation.y = 0.3;
   heli.position.y = -0.3;
   scene.add(heli);
 
-  /* 1. Fuselage */
+  /* ── 1. Fuselage ── */
   const gFuse = new THREE.Group(); heli.add(gFuse);
-  place(gFuse, box(1.45, 0.95, 2.9, mMain), 0, 0, -0.25);
-  place(gFuse, box(0.85, 0.48, 1.35, mMain), 0, 0.71, -1.0);
-  place(gFuse, box(0.78, 0.18, 0.2, mDim),   0, 0.85, -0.25);
-  place(gFuse, box(1.2, 0.12, 2.5, mDim),    0, -0.53, -0.3);
-  place(gFuse, box(1.45, 0.95, 0.06, mDim),  0, 0, -1.7);
-  place(gFuse, box(1.45, 0.95, 0.06, mDim),  0, 0,  0.75);
-  place(gFuse, box(1.52, 0.04, 0.04, mDim),  0, -0.55, 0.68);
-  place(gFuse, box(1.52, 0.04, 0.04, mDim),  0, -0.55, -0.92);
+  place(gFuse, box(1.45, 0.95, 2.9),        0,  0,     -0.25);
+  place(gFuse, box(0.85, 0.48, 1.35),        0,  0.71,  -1.0);
+  place(gFuse, box(0.78, 0.18, 0.2, mDim),   0,  0.85,  -0.25);
+  place(gFuse, box(1.2,  0.12, 2.5, mDim),   0, -0.53,  -0.3);
+  place(gFuse, box(1.45, 0.95, 0.06, mDim),  0,  0,     -1.7);
+  place(gFuse, box(1.45, 0.95, 0.06, mDim),  0,  0,      0.75);
+  place(gFuse, box(1.52, 0.04, 0.04, mDim),  0, -0.55,   0.68);
+  place(gFuse, box(1.52, 0.04, 0.04, mDim),  0, -0.55,  -0.92);
+  place(gFuse, box(0.04, 0.95, 0.04, mDim), -0.72, 0, -0.25);
+  place(gFuse, box(0.04, 0.95, 0.04, mDim),  0.72, 0, -0.25);
 
-  /* 2. Cockpit */
+  /* ── 2. Cockpit ── */
   const gCockpit = new THREE.Group(); heli.add(gCockpit);
-  place(gCockpit, edges(new THREE.SphereGeometry(0.76, 7, 5, 0, Math.PI*1.1, 0, Math.PI*0.75), mMain), 0, 0.06, 1.38);
-  place(gCockpit, box(0.04, 0.82, 0.04, mBright), 0, 0.18, 0.88);
-  place(gCockpit, box(1.35, 0.1, 0.75, mDim),     0, -0.4, 1.2);
-  place(gCockpit, box(1.3, 0.06, 0.06, mBright),  0, 0.6, 0.88);
-  place(gCockpit, box(0.06, 0.82, 1.1, mMain),   -0.72, 0.08, 0.42);
-  place(gCockpit, box(0.06, 0.82, 1.1, mMain),    0.72, 0.08, 0.42);
+  place(gCockpit, edges(new THREE.SphereGeometry(0.76, 7, 5, 0, Math.PI*1.1, 0, Math.PI*0.75)), 0, 0.06, 1.38);
+  place(gCockpit, box(0.04, 0.82, 0.04, mBright), 0,    0.18,  0.88);
+  place(gCockpit, box(1.35, 0.1,  0.75, mDim),    0,   -0.4,   1.2);
+  place(gCockpit, box(1.3,  0.06, 0.06, mBright), 0,    0.6,   0.88);
+  place(gCockpit, box(0.06, 0.82, 1.1),           -0.72, 0.08,  0.42);
+  place(gCockpit, box(0.06, 0.82, 1.1),            0.72, 0.08,  0.42);
+  place(gCockpit, box(1.45, 0.06, 0.06, mDim),    0,   -0.38,   0.88);
 
-  /* 3. Left door */
+  /* ── 3. Left door ── */
   const gDoorL = new THREE.Group(); heli.add(gDoorL);
-  place(gDoorL, box(0.055, 0.72, 1.15, mMain), -0.74, 0.06, 0.42);
-  place(gDoorL, box(0.055, 0.32, 0.52, mDim),  -0.74, 0.22, 0.4);
+  place(gDoorL, box(0.055, 0.72, 1.15),      -0.74, 0.06,  0.42);
+  place(gDoorL, box(0.055, 0.32, 0.52, mDim),-0.74, 0.22,  0.4);
+  place(gDoorL, box(0.055, 0.04, 1.15, mDim),-0.74, 0.42,  0.42);
 
-  /* 4. Right door */
+  /* ── 4. Right door ── */
   const gDoorR = new THREE.Group(); heli.add(gDoorR);
-  place(gDoorR, box(0.055, 0.72, 1.15, mMain),  0.74, 0.06, 0.42);
-  place(gDoorR, box(0.055, 0.32, 0.52, mDim),   0.74, 0.22, 0.4);
+  place(gDoorR, box(0.055, 0.72, 1.15),       0.74, 0.06,  0.42);
+  place(gDoorR, box(0.055, 0.32, 0.52, mDim), 0.74, 0.22,  0.4);
+  place(gDoorR, box(0.055, 0.04, 1.15, mDim), 0.74, 0.42,  0.42);
 
-  /* 5. Controls */
+  /* ── 5. Controls / instrument panel ── */
   const gCtrl = new THREE.Group(); heli.add(gCtrl);
-  place(gCtrl, box(0.52, 0.07, 0.5, mCtrl),  -0.28, -0.12, 0.55);
-  place(gCtrl, box(0.52, 0.62, 0.07, mCtrl), -0.28, 0.19, 0.33);
+  place(gCtrl, box(0.52, 0.07, 0.5,  mCtrl),  -0.28, -0.12, 0.55);
+  place(gCtrl, box(0.52, 0.62, 0.07, mCtrl),  -0.28,  0.19, 0.33);
   place(gCtrl, edges(new THREE.CylinderGeometry(0.022, 0.03, 0.52, 6), mBright), -0.08, -0.01, 0.62, 0.12, 0, 0);
-  place(gCtrl, box(0.15, 0.08, 0.08, mBright), -0.08, 0.25, 0.66);
+  place(gCtrl, box(0.15, 0.08, 0.08, mBright),-0.08,  0.25, 0.66);
   place(gCtrl, edges(new THREE.CylinderGeometry(0.018, 0.018, 0.6, 6), mCtrl), -0.52, -0.03, 0.48, 0, 0, -0.38);
-  place(gCtrl, box(1.22, 0.62, 0.06, mBright), 0, 0.14, 0.9);
-  place(gCtrl, box(1.12, 0.07, 0.06, mDim), 0,  0.32, 0.91);
-  place(gCtrl, box(1.12, 0.07, 0.06, mDim), 0,  0.14, 0.91);
-  place(gCtrl, box(1.12, 0.07, 0.06, mDim), 0, -0.06, 0.91);
-  place(gCtrl, box(0.06, 0.62, 0.06, mDim), -0.38, 0.14, 0.91);
-  place(gCtrl, box(0.06, 0.62, 0.06, mDim),  0.38, 0.14, 0.91);
+  place(gCtrl, box(1.22, 0.62, 0.06, mBright), 0,     0.14, 0.9);
+  place(gCtrl, box(1.12, 0.07, 0.06, mDim),    0,     0.32, 0.91);
+  place(gCtrl, box(1.12, 0.07, 0.06, mDim),    0,     0.14, 0.91);
+  place(gCtrl, box(1.12, 0.07, 0.06, mDim),    0,    -0.06, 0.91);
+  place(gCtrl, box(0.06, 0.62, 0.06, mDim),  -0.38,   0.14, 0.91);
+  place(gCtrl, box(0.06, 0.62, 0.06, mDim),   0.38,   0.14, 0.91);
 
-  /* 6. Rotor mast */
+  /* ── 6. Engine cowling (hinged access panels + ventilation) ── */
+  const gEngine = new THREE.Group(); heli.add(gEngine);
+  place(gEngine, box(1.35, 0.62, 1.38),           0,    0.56,  -1.06);
+  place(gEngine, box(1.37, 0.04, 1.38, mDim),     0,    0.76,  -1.06);
+  place(gEngine, box(1.37, 0.04, 1.38, mDim),     0,    0.34,  -1.06);
+  place(gEngine, box(0.04, 0.62, 1.38, mBright), -0.64, 0.56,  -1.06);
+  place(gEngine, box(0.04, 0.62, 1.38, mBright),  0.64, 0.56,  -1.06);
+  place(gEngine, box(1.35, 0.04, 1.38, mBright),  0,    0.87,  -1.06);
+  // Ventilation louvers (rear firewall)
+  place(gEngine, box(1.1, 0.04, 0.04, mDim), 0, 0.70, -1.76);
+  place(gEngine, box(1.1, 0.04, 0.04, mDim), 0, 0.60, -1.76);
+  place(gEngine, box(1.1, 0.04, 0.04, mDim), 0, 0.50, -1.76);
+  place(gEngine, box(1.1, 0.04, 0.04, mDim), 0, 0.40, -1.76);
+  // Panel fastener lines
+  place(gEngine, box(0.04, 0.04, 1.38, mDim), -0.3, 0.85, -1.06);
+  place(gEngine, box(0.04, 0.04, 1.38, mDim),  0.3, 0.85, -1.06);
+
+  /* ── 7. Main transmission housing ── */
+  const gTransmission = new THREE.Group(); heli.add(gTransmission);
+  place(gTransmission, cyl(0.44, 0.48, 0.60, 8),        0, 0.73, -0.42);
+  place(gTransmission, cyl(0.26, 0.30, 0.22, 8, mBright),0, 1.13, -0.42);
+  place(gTransmission, cyl(0.48, 0.52, 0.09, 8, mDim),  0, 0.47, -0.42);
+  // Mounting legs (4)
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2 + Math.PI / 4;
+    place(gTransmission, cyl(0.036, 0.036, 0.16, 6, mDim),
+      Math.cos(a) * 0.40, 0.68, -0.42 + Math.sin(a) * 0.40);
+  }
+  // Oil cooler port
+  place(gTransmission, box(0.24, 0.18, 0.07, mDim), 0.50, 0.73, -0.42);
+  place(gTransmission, box(0.24, 0.18, 0.07, mDim),-0.50, 0.73, -0.42);
+
+  /* ── 8. Rotor mast ── */
   const gMast = new THREE.Group(); heli.add(gMast);
-  place(gMast, cyl(0.07, 0.09, 0.85, 8, mMain), 0, 1.25, -0.42);
-  place(gMast, cyl(0.22, 0.26, 0.35, 8, mMain), 0, 0.96, -0.42);
+  place(gMast, cyl(0.07, 0.09, 0.82, 8),      0, 1.25, -0.42);
+  place(gMast, cyl(0.22, 0.26, 0.35, 8),      0, 0.96, -0.42);
   place(gMast, edges(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 8), mBright), 0, 1.7, -0.42);
   place(gMast, cyl(0.022, 0.022, 0.28, 5, mDim),  0.3, 1.56, -0.42);
   place(gMast, cyl(0.022, 0.022, 0.28, 5, mDim), -0.3, 1.56, -0.42);
 
-  /* 7. Main rotor blades — origin at mast head */
+  /* ── 9. Swashplate + pitch links ── */
+  const gSwashplate = new THREE.Group(); heli.add(gSwashplate);
+  place(gSwashplate, cyl(0.27, 0.27, 0.06, 12, mBright), 0, 1.38, -0.42);
+  place(gSwashplate, cyl(0.21, 0.21, 0.06, 12, mDim),    0, 1.46, -0.42);
+  // Scissors link
+  place(gSwashplate, box(0.035, 0.32, 0.035, mCtrl), 0.20, 1.50, -0.42);
+  // 4 pitch links
+  [0, Math.PI*0.5, Math.PI, Math.PI*1.5].forEach(a => {
+    const px = Math.cos(a) * 0.20;
+    const pz = -0.42 + Math.sin(a) * 0.20;
+    place(gSwashplate, cyl(0.018, 0.018, 0.30, 5, mCtrl), px, 1.58, pz, 0.22, 0, a);
+  });
+  // Anti-rotation guide
+  place(gSwashplate, box(0.035, 0.035, 0.24, mDim), 0, 1.42, -0.24);
+
+  /* ── 10. Main rotor blades — group origin at mast head ── */
   const gRotor = new THREE.Group();
   gRotor.position.set(0, 1.7, -0.42);
   heli.add(gRotor);
-  place(gRotor, box(4.1, 0.07, 0.24, mMain),  2.25, 0,     0);
-  place(gRotor, box(4.1, 0.04, 0.18, mDim),   2.25, -0.06, 0);
-  place(gRotor, box(4.1, 0.07, 0.24, mMain), -2.25, 0,     0);
-  place(gRotor, box(4.1, 0.04, 0.18, mDim),  -2.25, -0.06, 0);
-  place(gRotor, cyl(0.04, 0.04, 0.22, 5, mDim),  0.8, 0, 0);
-  place(gRotor, cyl(0.04, 0.04, 0.22, 5, mDim), -0.8, 0, 0);
+  place(gRotor, box(4.1, 0.07, 0.24),         2.25,  0,     0);
+  place(gRotor, box(4.1, 0.04, 0.18, mDim),   2.25, -0.06,  0);
+  place(gRotor, box(4.1, 0.07, 0.24),        -2.25,  0,     0);
+  place(gRotor, box(4.1, 0.04, 0.18, mDim), -2.25, -0.06,  0);
+  place(gRotor, cyl(0.04, 0.04, 0.22, 5, mDim),  0.8,  0,  0);
+  place(gRotor, cyl(0.04, 0.04, 0.22, 5, mDim), -0.8,  0,  0);
+  // Blade tip caps
+  place(gRotor, box(0.12, 0.09, 0.28, mBright),  4.1,  0,  0);
+  place(gRotor, box(0.12, 0.09, 0.28, mBright), -4.1,  0,  0);
+  // Hub plate
+  place(gRotor, edges(new THREE.CylinderGeometry(0.18, 0.18, 0.08, 8), mBright), 0, 0, 0);
 
-  /* 8. Tail boom */
+  /* ── 11. Exhaust stack (right side) ── */
+  const gExhaust = new THREE.Group(); heli.add(gExhaust);
+  place(gExhaust, cyl(0.082, 0.095, 0.52, 7),       0.72,  0.62, -1.00, 0, 0, 0.24);
+  place(gExhaust, cyl(0.098, 0.112, 0.10, 7, mBright), 0.72, 0.83, -1.18);
+  // IR suppressor rings
+  place(gExhaust, edges(new THREE.CylinderGeometry(0.135, 0.135, 0.025, 7), mDim), 0.72, 0.77, -1.14);
+  place(gExhaust, edges(new THREE.CylinderGeometry(0.122, 0.122, 0.025, 7), mDim), 0.72, 0.71, -1.10);
+  place(gExhaust, edges(new THREE.CylinderGeometry(0.110, 0.110, 0.025, 7), mDim), 0.72, 0.65, -1.06);
+  // Heat shield plate
+  place(gExhaust, box(0.28, 0.26, 0.48, mDim),  0.59, 0.62, -1.00);
+
+  /* ── 12. Air intake (left side) ── */
+  const gIntake = new THREE.Group(); heli.add(gIntake);
+  place(gIntake, box(0.07, 0.50, 0.44),          -0.74, 0.56, -0.72);
+  place(gIntake, box(0.12, 0.56, 0.50, mBright), -0.80, 0.56, -0.72);
+  // Intake grille bars
+  for (let i = 0; i < 6; i++) {
+    place(gIntake, box(0.07, 0.028, 0.44, mDim), -0.74, 0.32 + i * 0.08, -0.72);
+  }
+  // Particle separator vane
+  place(gIntake, box(0.14, 0.30, 0.28, mDim), -0.88, 0.62, -0.78);
+  place(gIntake, box(0.14, 0.04, 0.28, mDim), -0.88, 0.46, -0.78);
+
+  /* ── 13. Tail boom ── */
   const gBoom = new THREE.Group(); heli.add(gBoom);
-  place(gBoom, cyl(0.14, 0.30, 3.85, 8, mMain), 0, -0.08, -2.82, Math.PI*0.5, 0, 0);
-  place(gBoom, edges(new THREE.CylinderGeometry(0.28,0.28,0.05,8), mDim), 0, -0.08, -1.9);
-  place(gBoom, edges(new THREE.CylinderGeometry(0.22,0.22,0.05,8), mDim), 0, -0.08, -2.65);
-  place(gBoom, edges(new THREE.CylinderGeometry(0.17,0.17,0.05,8), mDim), 0, -0.08, -3.4);
+  place(gBoom, cyl(0.14, 0.30, 3.85, 8), 0, -0.08, -2.82, Math.PI*0.5, 0, 0);
+  place(gBoom, edges(new THREE.CylinderGeometry(0.28, 0.28, 0.05, 8), mDim), 0, -0.08, -1.9);
+  place(gBoom, edges(new THREE.CylinderGeometry(0.22, 0.22, 0.05, 8), mDim), 0, -0.08, -2.65);
+  place(gBoom, edges(new THREE.CylinderGeometry(0.17, 0.17, 0.05, 8), mDim), 0, -0.08, -3.4);
   place(gBoom, box(0.1, 0.1, 0.1, mBright), 0, -0.08, -4.7);
 
-  /* 9. Tail fin */
-  const gFin = new THREE.Group(); heli.add(gFin);
-  place(gFin, box(0.065, 1.05, 0.72, mMain), 0, 0.38, -4.66);
-  place(gFin, box(1.75, 0.065, 0.42, mMain), 0, -0.04, -4.52);
-  place(gFin, box(0.065, 0.28, 0.38, mDim),  0, -0.32, -4.52);
-  place(gFin, box(0.065, 0.35, 0.35, mDim),  0, -0.18, -4.3);
+  /* ── 14. Tail boom stringers (4 longitudinal lines) ── */
+  const gStringers = new THREE.Group(); heli.add(gStringers);
+  [0, Math.PI*0.5, Math.PI, Math.PI*1.5].forEach(a => {
+    const r = 0.22;
+    const sx = Math.cos(a) * r;
+    const sy = -0.08 + Math.sin(a) * r;
+    place(gStringers, box(0.028, 0.028, 1.55, mDim), sx,        sy,        -2.05);
+    place(gStringers, box(0.028, 0.028, 1.55, mDim), sx * 0.78, sy * 0.78, -2.88);
+    place(gStringers, box(0.028, 0.028, 0.90, mDim), sx * 0.58, sy * 0.58, -4.05);
+  });
 
-  /* 10. Tail rotor — origin at hub */
+  /* ── 15. Tail fin ── */
+  const gFin = new THREE.Group(); heli.add(gFin);
+  place(gFin, box(0.065, 1.05, 0.72),          0,    0.38, -4.66);
+  place(gFin, box(1.75,  0.065, 0.42),          0,   -0.04, -4.52);
+  place(gFin, box(0.065, 0.28, 0.38, mDim),     0,   -0.32, -4.52);
+  place(gFin, box(0.065, 0.35, 0.35, mDim),     0,   -0.18, -4.3);
+  place(gFin, box(0.065, 0.06, 0.72, mBright),  0,    0.85, -4.66);
+
+  /* ── 16. Tail rotor — group origin at hub ── */
   const gTRot = new THREE.Group();
   gTRot.position.set(0.18, 0.55, -4.66);
   heli.add(gTRot);
   place(gTRot, edges(new THREE.CylinderGeometry(0.1, 0.1, 0.14, 8), mMain), 0, 0, 0, 0, 0, Math.PI*0.5);
-  place(gTRot, box(0.08, 1.25, 0.1, mMain), 0, 0, 0);
-  place(gTRot, box(0.08, 0.1, 1.25, mMain), 0, 0, 0);
+  place(gTRot, box(0.08, 1.25, 0.1), 0, 0, 0);
+  place(gTRot, box(0.08, 0.1, 1.25), 0, 0, 0);
   place(gTRot, cyl(0.02, 0.02, 0.28, 5, mDim), 0, 0.27, 0, 0, 0, 0.35);
+  // Blade tips
+  place(gTRot, box(0.06, 0.10, 0.14, mBright), 0,  0.62, 0);
+  place(gTRot, box(0.06, 0.10, 0.14, mBright), 0, -0.62, 0);
 
-  /* 11. Left skid */
+  /* ── 17. Left skid ── */
   const gSkidL = new THREE.Group(); heli.add(gSkidL);
-  place(gSkidL, box(0.045, 0.045, 3.4, mMain), -0.74, -0.78, -0.2);
-  place(gSkidL, cyl(0.028, 0.028, 0.52, 5, mMain), -0.74, -0.55, 0.68, 0, 0,  0.14);
-  place(gSkidL, cyl(0.028, 0.028, 0.52, 5, mMain), -0.74, -0.55,-0.92, 0, 0, -0.08);
-  place(gSkidL, box(0.045, 0.045, 0.5, mDim), -0.74, -0.78, 1.32);
+  place(gSkidL, box(0.045, 0.045, 3.4),         -0.74, -0.78, -0.2);
+  place(gSkidL, cyl(0.028, 0.028, 0.52, 5),     -0.74, -0.55,  0.68, 0, 0,  0.14);
+  place(gSkidL, cyl(0.028, 0.028, 0.52, 5),     -0.74, -0.55, -0.92, 0, 0, -0.08);
+  place(gSkidL, box(0.045, 0.045, 0.5, mDim),   -0.74, -0.78,  1.32);
+  place(gSkidL, box(0.045, 0.045, 0.12, mDim),  -0.74, -0.78, -1.9);
 
-  /* 12. Right skid */
+  /* ── 18. Right skid ── */
   const gSkidR = new THREE.Group(); heli.add(gSkidR);
-  place(gSkidR, box(0.045, 0.045, 3.4, mMain),  0.74, -0.78, -0.2);
-  place(gSkidR, cyl(0.028, 0.028, 0.52, 5, mMain),  0.74, -0.55, 0.68, 0, 0, -0.14);
-  place(gSkidR, cyl(0.028, 0.028, 0.52, 5, mMain),  0.74, -0.55,-0.92, 0, 0,  0.08);
-  place(gSkidR, box(0.045, 0.045, 0.5, mDim),  0.74, -0.78, 1.32);
+  place(gSkidR, box(0.045, 0.045, 3.4),          0.74, -0.78, -0.2);
+  place(gSkidR, cyl(0.028, 0.028, 0.52, 5),      0.74, -0.55,  0.68, 0, 0, -0.14);
+  place(gSkidR, cyl(0.028, 0.028, 0.52, 5),      0.74, -0.55, -0.92, 0, 0,  0.08);
+  place(gSkidR, box(0.045, 0.045, 0.5, mDim),    0.74, -0.78,  1.32);
+  place(gSkidR, box(0.045, 0.045, 0.12, mDim),   0.74, -0.78, -1.9);
 
-  /* Ambient particles */
+  /* ── Grid ── */
+  const grid = new THREE.GridHelper(28, 28, 0x001833, 0x001122);
+  grid.position.y = -1.35;
+  const gridMats = Array.isArray(grid.material) ? grid.material : [grid.material];
+  gridMats.forEach(m => { m.transparent = true; m.opacity = 0; });
+  scene.add(grid);
+
+  /* ── Ambient particles ── */
   const ptGeo = new THREE.BufferGeometry();
   const pa = [];
-  for(let i=0;i<200;i++) pa.push((Math.random()-.5)*32,(Math.random()-.5)*22,(Math.random()-.5)*32);
+  for (let i = 0; i < 280; i++) pa.push((Math.random()-.5)*36, (Math.random()-.5)*24, (Math.random()-.5)*36);
   ptGeo.setAttribute('position', new THREE.Float32BufferAttribute(pa, 3));
-  scene.add(new THREE.Points(ptGeo, new THREE.PointsMaterial({ color: 0x002233, size: 0.04 })));
+  scene.add(new THREE.Points(ptGeo, new THREE.PointsMaterial({ color: 0x001a22, size: 0.04 })));
 
-  /* Parts list for explode */
-  const parts = [
-    { g: gFuse,    ex: [0,  -0.3,  0  ] },
-    { g: gCockpit, ex: [0,   0.8,  3.2] },
-    { g: gDoorL,   ex: [-3.8, 0.3, 0.4] },
-    { g: gDoorR,   ex: [ 3.8, 0.3, 0.4] },
-    { g: gCtrl,    ex: [0,  -2.2,  2.8] },
-    { g: gMast,    ex: [0,   3.0, -0.4] },
-    { g: gRotor,   ex: [0,   4.8, -0.4] },
-    { g: gBoom,    ex: [0.2,-0.8, -5.2] },
-    { g: gFin,     ex: [0.8, 2.2, -7.5] },
-    { g: gTRot,    ex: [2.2, 2.8, -8.2] },
-    { g: gSkidL,   ex: [-3.2,-2.8, 0  ] },
-    { g: gSkidR,   ex: [ 3.2,-2.8, 0  ] },
+  /* ── Annotation lines (measurement) ── */
+  const annotGroup = new THREE.Group(); heli.add(annotGroup);
+  function annotLine(x1,y1,z1, x2,y2,z2) {
+    const geo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(x1,y1,z1), new THREE.Vector3(x2,y2,z2)
+    ]);
+    return new THREE.Line(geo, mAnnot);
+  }
+  // Overall length (nose to tail)
+  annotGroup.add(annotLine(-0.9,-1.5, 2.2, -0.9,-1.5,-5.2));
+  annotGroup.add(annotLine(-0.7,-1.5, 2.2, -1.1,-1.5, 2.2));
+  annotGroup.add(annotLine(-0.7,-1.5,-5.2, -1.1,-1.5,-5.2));
+  // Rotor span
+  annotGroup.add(annotLine(-5.1, 2.05,-0.42,  5.1, 2.05,-0.42));
+  annotGroup.add(annotLine(-5.1, 1.85,-0.42, -5.1, 2.25,-0.42));
+  annotGroup.add(annotLine( 5.1, 1.85,-0.42,  5.1, 2.25,-0.42));
+  // Height
+  annotGroup.add(annotLine(-2.3,-1.35, 0.5, -2.3, 2.1, 0.5));
+  annotGroup.add(annotLine(-2.1,-1.35, 0.5, -2.5,-1.35, 0.5));
+  annotGroup.add(annotLine(-2.1, 2.1,  0.5, -2.5, 2.1,  0.5));
+
+  /* ── Selector box (highlights active part during systems check) ── */
+  const gSel = new THREE.Group(); heli.add(gSel);
+  const selMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+  const selBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)), selMat);
+  gSel.add(selBox);
+
+  /* ── Highlight definitions (for systems check orbit phase) ── */
+  const highlightDefs = [
+    { name: 'FUSELAGE',          spec: 'SEMI-MONOCOQUE AIRFRAME',   pos: [0,0,-0.25],          sz: [2.2,1.5,3.6] },
+    { name: 'ENGINE COWLING',    spec: 'ALLISON 250-C20B  317 SHP', pos: [0,0.56,-1.06],        sz: [1.8,0.9,1.8] },
+    { name: 'MAIN GEARBOX',      spec: 'PRIMARY DRIVETRAIN',        pos: [0,0.80,-0.42],        sz: [1.4,1.0,1.4] },
+    { name: 'COCKPIT ASSEMBLY',  spec: 'POLYCARBONATE GLAZING',     pos: [0,0.1,1.1],           sz: [2.0,1.3,2.2] },
+    { name: 'SWASHPLATE',        spec: 'CYCLIC / COLLECTIVE CTL',   pos: [0,1.42,-0.42],        sz: [1.0,0.5,1.0] },
+    { name: 'MAIN ROTOR SYSTEM', spec: '2-BLADE SEMI-RIGID HUB',    pos: [0,1.7,-0.42],         sz: [5.6,0.4,5.6] },
+    { name: 'TAIL BOOM',         spec: 'TAPERED MONOCOQUE TUBE',    pos: [0,-0.08,-2.82],       sz: [0.9,0.7,5.2] },
+    { name: 'TAIL ROTOR',        spec: 'ANTI-TORQUE SYSTEM',        pos: [0.18,0.55,-4.66],     sz: [0.6,1.9,0.6] },
+    { name: 'EXHAUST SYSTEM',    spec: 'IR SUPPRESSOR STACK',       pos: [0.72,0.70,-1.05],     sz: [0.65,0.75,1.0] },
+    { name: 'LANDING GEAR',      spec: 'TUBULAR SKID TYPE',         pos: [0,-0.95,0],           sz: [2.0,0.7,4.0] },
   ];
 
-  /* GSAP timeline scoped to wireframe zone */
+  /* ── Parts array (explode + reassemble) ── */
+  const parts = [
+    { g: gFuse,         home: [0,    0,    0    ], ex: [0,   -0.4,   0  ] },
+    { g: gCockpit,      home: [0,    0,    0    ], ex: [0,    0.8,   3.5] },
+    { g: gDoorL,        home: [0,    0,    0    ], ex: [-4.2, 0.4,   0.5] },
+    { g: gDoorR,        home: [0,    0,    0    ], ex: [ 4.2, 0.4,   0.5] },
+    { g: gCtrl,         home: [0,    0,    0    ], ex: [0,   -2.5,   3.0] },
+    { g: gEngine,       home: [0,    0,    0    ], ex: [0,    2.6,  -4.0] },
+    { g: gTransmission, home: [0,    0,    0    ], ex: [0,    5.8,  -0.4] },
+    { g: gSwashplate,   home: [0,    0,    0    ], ex: [0,    7.5,  -0.4] },
+    { g: gExhaust,      home: [0,    0,    0    ], ex: [3.8,  4.0,  -2.8] },
+    { g: gIntake,       home: [0,    0,    0    ], ex: [-4.0, 3.5,  -2.2] },
+    { g: gMast,         home: [0,    0,    0    ], ex: [0,    3.8,  -0.4] },
+    { g: gRotor,        home: [0,    1.7, -0.42 ], ex: [0,    5.8,  -0.4] },
+    { g: gBoom,         home: [0,    0,    0    ], ex: [0.3, -0.8,  -5.8] },
+    { g: gStringers,    home: [0,    0,    0    ], ex: [-0.6,-0.8,  -6.5] },
+    { g: gFin,          home: [0,    0,    0    ], ex: [1.0,  2.8,  -8.5] },
+    { g: gTRot,         home: [0.18, 0.55,-4.66 ], ex: [2.8,  3.2,  -9.0] },
+    { g: gSkidL,        home: [0,    0,    0    ], ex: [-3.5,-3.0,   0  ] },
+    { g: gSkidR,        home: [0,    0,    0    ], ex: [ 3.5,-3.0,   0  ] },
+  ];
+
+  /* ── GSAP ScrollTrigger timeline ── */
   const scrollState = { p: 0 };
   const wfZone = document.getElementById('wireframe-zone');
 
@@ -1018,36 +1236,60 @@ gsap.registerPlugin(ScrollTrigger);
         scrollState.p = self.progress;
         const pct = Math.round(self.progress * 100);
         document.getElementById('hud-pct').textContent = pct + '%';
-        const ph = pct < 12 ? 'OVERVIEW' : pct < 52 ? 'COCKPIT' : pct < 85 ? 'DECONSTRUCT' : 'ASSEMBLY';
+        const ph = pct < 13 ? 'OVERVIEW'
+                 : pct < 40 ? 'SYS · CHECK'
+                 : pct < 62 ? 'COCKPIT'
+                 : pct < 85 ? 'DECONSTRUCT'
+                 : 'ASSEMBLY';
         document.getElementById('hud-phase').textContent = ph;
         const xh = document.getElementById('crosshair');
-        (pct > 18 && pct < 56) ? xh.classList.add('active') : xh.classList.remove('active');
+        (pct > 40 && pct < 64) ? xh.classList.add('active') : xh.classList.remove('active');
       }
     }
   });
 
-  /* Phase 0-10%: gentle tilt */
-  tl.to(heli.rotation, { y: 0.5, duration: 1, ease: 'none' }, 0);
+  /* Phase 0–13% · Hero — subtle tilt */
+  tl.to(heli.rotation, { y: 0.5, duration: 1.3, ease: 'none' }, 0);
 
-  /* Phase 10-50%: cockpit zoom */
-  tl.to(camera.position, { x: 1.8, y: 0.8, z: 3.6, duration: 4, ease: 'power2.inOut' }, 1);
-  tl.to(lookTarget,       { x: 0,   y: 0.1, z: 0.8, duration: 4, ease: 'power2.inOut' }, 1);
-  tl.to(heli.rotation,    { y: 0.6, duration: 4, ease: 'power2.inOut' }, 1);
+  /* Phase 13–40% · Orbit — camera circles the helicopter */
+  tl.to(camera.position, { x: 2,   y: 5.8,  z: 13,  duration: 1.0, ease: 'power2.inOut' }, 1.3);
+  tl.to(lookTarget,       { x: 0,   y: 0.5,  z: 0,   duration: 1.0, ease: 'power2.inOut' }, 1.3);
 
-  /* Phase 50-55%: pull back */
-  tl.to(camera.position, { x: 10, y: 5.5, z: 14, duration: 1.5, ease: 'power3.inOut' }, 5);
-  tl.to(lookTarget,       { x: 0,  y: 1.0, z: -2, duration: 1.5, ease: 'power3.inOut' }, 5);
-  tl.to(heli.rotation,    { y: 0.9, duration: 1.5 }, 5);
+  tl.to(camera.position, { x: -10, y: 4.8,  z: 3,   duration: 1.2, ease: 'power2.inOut' }, 2.3);
+  tl.to(lookTarget,       { x: 0,   y: 0.2,  z: -1,  duration: 1.2, ease: 'power2.inOut' }, 2.3);
 
-  /* Phase 55-85%: explode */
+  tl.to(camera.position, { x: -6,  y: 4.0,  z: -9,  duration: 1.0, ease: 'power2.inOut' }, 3.5);
+
+  tl.to(camera.position, { x: 6,   y: 3.8,  z: 8,   duration: 1.0, ease: 'power2.inOut' }, 4.5);
+  tl.to(lookTarget,       { x: 0,   y: 0.3,  z: -1,  duration: 1.0, ease: 'power2.inOut' }, 4.5);
+
+  /* Annotation lines fade in during orbit */
+  tl.to(mAnnot, { opacity: 0.45, duration: 0.8 }, 1.8);
+  /* Annotation lines fade out after orbit */
+  tl.to(mAnnot, { opacity: 0, duration: 0.8 }, 5.2);
+
+  /* Phase 40–62% · Cockpit zoom */
+  tl.to(camera.position, { x: 1.8, y: 0.8,  z: 3.6, duration: 3.2, ease: 'power3.inOut' }, 5.5);
+  tl.to(lookTarget,       { x: 0,   y: 0.1,  z: 0.8, duration: 3.2, ease: 'power3.inOut' }, 5.5);
+  tl.to(heli.rotation,    { y: 0.6, duration: 3.2,   ease: 'power2.inOut' }, 5.5);
+
+  /* Phase 62–65% · Pull back for explode */
+  tl.to(camera.position, { x: 10,  y: 5.5,  z: 14,  duration: 0.6, ease: 'power3.inOut' }, 8.7);
+  tl.to(lookTarget,       { x: 0,   y: 1.0,  z: -2,  duration: 0.6, ease: 'power3.inOut' }, 8.7);
+  tl.to(heli.rotation,    { y: 0.9, duration: 0.6 }, 8.7);
+
+  /* Phase 65–83% · Explode */
   parts.forEach((p, i) => {
-    tl.to(p.g.position, { x: p.ex[0], y: p.ex[1], z: p.ex[2], duration: 2.8, ease: 'power3.out' }, 5.5 + i * 0.12);
+    tl.to(p.g.position, { x: p.ex[0], y: p.ex[1], z: p.ex[2], duration: 2.4, ease: 'power3.out' }, 9.2 + i * 0.13);
   });
 
-  /* Phase 85-100%: final rotate */
-  tl.to(heli.rotation, { y: 1.4, duration: 2, ease: 'power1.inOut' }, 8.5);
+  /* Phase 83–100% · Reassemble */
+  parts.forEach((p, i) => {
+    tl.to(p.g.position, { x: p.home[0], y: p.home[1], z: p.home[2], duration: 1.8, ease: 'power3.inOut' }, 12.0 + i * 0.09);
+  });
+  tl.to(heli.rotation, { y: 1.8, duration: 0.8, ease: 'power1.inOut' }, 14.0);
 
-  /* Canvas crossfade: wireframe out → flow field in */
+  /* Canvas crossfade */
   gsap.to('#bg-canvas', {
     opacity: 0,
     scrollTrigger: { trigger: wfZone, start: 'bottom 60%', end: 'bottom top', scrub: 1 }
@@ -1057,39 +1299,115 @@ gsap.registerPlugin(ScrollTrigger);
     scrollTrigger: { trigger: wfZone, start: 'bottom 60%', end: 'bottom top', scrub: 1 }
   });
 
-  /* Fade HUD out as wireframe zone ends */
+  /* Fade HUD out as zone ends */
   gsap.to(['#hud-tl','#hud-br','.hud-corners'], {
     opacity: 0,
     scrollTrigger: { trigger: wfZone, start: 'bottom 80%', end: 'bottom top', scrub: 1 }
   });
 
-  /* Render loop */
+  /* ── Load-time reveal: scan line sweep ── */
+  const scanMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.55, fog: false });
+  const scanMesh = new THREE.Mesh(new THREE.BoxGeometry(16, 0.025, 16), scanMat);
+  scanMesh.position.y = -3;
+  scene.add(scanMesh);
+  gsap.to(scanMesh.position, { y: 3.8, duration: 1.9, ease: 'power2.inOut', delay: 0.7 });
+  gsap.to(scanMat, { opacity: 0, duration: 0.4, delay: 2.4, onComplete: () => scene.remove(scanMesh) });
+
+  /* Materialize helicopter from black on load */
+  gsap.to(mMain.color,   { r: 0,     g: 0.898, b: 1.0,   duration: 1.8, ease: 'power2.inOut', delay: 0.7 });
+  gsap.to(mDim.color,    { r: 0,     g: 0.267, b: 0.333, duration: 1.8, ease: 'power2.inOut', delay: 1.0 });
+  gsap.to(mBright.color, { r: 0.502, g: 1.0,   b: 1.0,   duration: 1.8, ease: 'power2.inOut', delay: 1.2 });
+  gsap.to(mCtrl.color,   { r: 0,     g: 1.0,   b: 0.8,   duration: 1.8, ease: 'power2.inOut', delay: 1.3 });
+  /* Grid fades in after reveal */
+  gsap.to(gridMats,      { opacity: 1, duration: 1.4, delay: 2.2 });
+
+  /* ── Render loop ── */
   const clock = new THREE.Clock();
-  let trAngle = 0;
+  let trAngle = 0, rpmDisplay = 0, lastHighlightIdx = -1;
+
   (function animate() {
     requestAnimationFrame(animate);
     const dt = clock.getDelta();
     const t  = clock.getElapsedTime();
     const p  = scrollState.p;
 
-    if(p < 0.08) heli.rotation.x = Math.sin(t * 0.4) * 0.015;
-
+    /* Rotor animations */
     trAngle += dt * 18;
     gTRot.rotation.x = trAngle;
-
-    const rspd = p < 0.08 ? 0.8 : p < 0.5 ? 0.4 : 0.12;
+    const rspd = p < 0.08 ? 0.8 : p < 0.50 ? 0.4 : 0.12;
     gRotor.rotation.y += dt * rspd;
 
-    if(p > 0.18 && p < 0.58) {
+    /* Subtle hover in hero */
+    if (p < 0.08) heli.rotation.x = Math.sin(t * 0.4) * 0.015;
+
+    /* Control pulse during cockpit zoom */
+    if (p > 0.40 && p < 0.65) {
       const pulse = 0.55 + 0.45 * Math.sin(t * 3.5);
       mCtrl.color.setRGB(pulse * 0.1, 1.0, 0.85 + pulse * 0.15);
-    } else {
-      mCtrl.color.setRGB(0, 0.9, 0.8);
+    } else if (p < 0.40) {
+      mCtrl.color.setRGB(0, 1.0, 0.8);
     }
+
+    /* Systems check: selector box + HUD labels */
+    updateHighlight(p, t);
+
+    /* HUD readout update */
+    updateHudReadout(p, t);
 
     camera.lookAt(new THREE.Vector3(lookTarget.x, lookTarget.y, lookTarget.z));
     renderer.render(scene, camera);
   })();
+
+  function updateHighlight(p, t) {
+    const oStart = 0.13, oEnd = 0.40;
+    const partLabel = document.getElementById('hud-part-label');
+    const readout   = document.getElementById('hud-readout');
+
+    if (p < oStart || p > oEnd) {
+      selMat.opacity = 0;
+      if (partLabel) partLabel.classList.remove('active');
+      if (readout)   readout.classList.remove('active');
+      return;
+    }
+
+    const relP = Math.min((p - oStart) / (oEnd - oStart), 0.999);
+    const idx  = Math.floor(relP * highlightDefs.length);
+    const def  = highlightDefs[idx];
+
+    gSel.position.set(def.pos[0], def.pos[1], def.pos[2]);
+    selBox.scale.set(def.sz[0], def.sz[1], def.sz[2]);
+    selMat.opacity = 0.32 + 0.22 * Math.sin(t * 5.5);
+
+    if (partLabel) partLabel.classList.add('active');
+    if (readout)   readout.classList.add('active');
+
+    if (idx !== lastHighlightIdx) {
+      lastHighlightIdx = idx;
+      const nameEl = document.getElementById('hud-part-name');
+      const specEl = document.getElementById('hud-part-spec');
+      if (nameEl) nameEl.textContent = def.name;
+      if (specEl) specEl.textContent = def.spec;
+    }
+  }
+
+  function updateHudReadout(p, t) {
+    const rpmEl = document.getElementById('hud-rpm');
+    const sysEl = document.getElementById('hud-sys');
+    const seqEl = document.getElementById('hud-seq');
+    if (!rpmEl) return;
+
+    const targetRpm = p < 0.13 ? 0 : p < 0.40 ? 2800 : p < 0.62 ? 3200 : p < 0.85 ? 800 : 3000;
+    rpmDisplay += (targetRpm - rpmDisplay) * 0.04;
+    rpmEl.textContent = rpmDisplay > 60 ? Math.round(rpmDisplay) : '—';
+
+    if (sysEl) sysEl.textContent = (p > 0.13 && p < 0.85) ? 'ACTIVE' : 'STANDBY';
+    if (seqEl) {
+      const seqs = ['OVERVIEW', 'SYS CHECK', 'COCKPIT', 'DECONSTRUCT', 'ASSEMBLY'];
+      const si = p < 0.13 ? 0 : p < 0.40 ? 1 : p < 0.62 ? 2 : p < 0.85 ? 3 : 4;
+      seqEl.textContent = seqs[si];
+    }
+  }
+
 })();
 
 /* ══════════════════════════════════════════════════════════════
@@ -1099,7 +1417,7 @@ gsap.registerPlugin(ScrollTrigger);
 /* Cursor */
 const cd = document.getElementById('cd');
 const cr = document.getElementById('cr');
-let mx=0,my=0,rx=0,ry=0;
+let mx=0, my=0, rx=0, ry=0;
 document.addEventListener('mousemove', e => {
   mx = e.clientX; my = e.clientY;
   cd.style.left = mx+'px'; cd.style.top = my+'px';
@@ -1141,8 +1459,8 @@ function drawFlow() {
   ctx.fillStyle = 'rgba(0,0,0,.012)';
   ctx.fillRect(0, 0, W, H);
   ft += .0015;
-  for(const p of pts) {
-    const a = angle(p.x, p.y);
+  for (const p of pts) {
+    const a  = angle(p.x, p.y);
     const nx = p.x + Math.cos(a) * .6;
     const ny = p.y + Math.sin(a) * .6;
     const alpha = Math.sin(p.life / p.maxLife * Math.PI) * .12;
@@ -1150,7 +1468,7 @@ function drawFlow() {
     ctx.lineWidth = .5;
     ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(nx, ny); ctx.stroke();
     p.x = nx; p.y = ny; p.life += .004;
-    if(p.life > p.maxLife || p.x < 0 || p.x > W || p.y < 0 || p.y > H) {
+    if (p.life > p.maxLife || p.x < 0 || p.x > W || p.y < 0 || p.y > H) {
       p.x = Math.random()*W; p.y = Math.random()*H; p.life = 0; p.maxLife = .3+Math.random()*.7;
     }
   }
@@ -1160,7 +1478,7 @@ drawFlow();
 
 /* Intersection observer */
 const io = new IntersectionObserver(entries => {
-  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: .1 });
 document.querySelectorAll('.reveal,.timeline-item,.skill-card,.edu-card,.vol-card,.stat-item').forEach(el => io.observe(el));
 
@@ -1171,9 +1489,9 @@ document.querySelectorAll('.edu-card,.vol-card').forEach((el,i) => el.style.tran
 /* Counters */
 const cio = new IntersectionObserver(entries => {
   entries.forEach(e => {
-    if(!e.isIntersecting) return;
+    if (!e.isIntersecting) return;
     const el = e.target.querySelector('.stat-number');
-    if(!el || el.dataset.done) return;
+    if (!el || el.dataset.done) return;
     el.dataset.done = '1';
     const target = parseFloat(el.dataset.target);
     const prefix = el.dataset.prefix||'', suffix = el.dataset.suffix||'';
@@ -1182,10 +1500,10 @@ const cio = new IntersectionObserver(entries => {
     (function tick(now) {
       const pct = Math.min((now-s)/dur,1), ease = 1-Math.pow(1-pct,3);
       el.textContent = prefix + (dec ? (target*ease).toFixed(1) : Math.round(target*ease)) + suffix;
-      if(pct < 1) requestAnimationFrame(tick);
+      if (pct < 1) requestAnimationFrame(tick);
     })(s);
   });
-}, {threshold:.3});
+}, { threshold: .3 });
 document.querySelectorAll('.stat-item').forEach(el => cio.observe(el));
 </script>
 </body>
