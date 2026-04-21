@@ -121,24 +121,21 @@
     #hud-readout.active { opacity: 1; }
     #hud-readout span { color: rgba(0,229,255,.75); }
 
-    /* ── HUD center part label (visible during systems check) ── */
+    /* ── HUD center part label (subtle, bottom-center during systems check) ── */
     #hud-part-label {
-      position: fixed; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
+      position: fixed; bottom: 52px; left: 50%;
+      transform: translateX(-50%);
       text-align: center; pointer-events: none; z-index: 5;
       opacity: 0; transition: opacity .35s;
     }
     #hud-part-label.active { opacity: 1; }
     #hud-part-name {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(1.3rem, 3vw, 2rem);
-      font-weight: 300; color: #fff;
-      letter-spacing: .3em; text-transform: uppercase;
-      text-shadow: 0 0 40px rgba(0,229,255,.7), 0 0 80px rgba(0,229,255,.3);
+      font-size: .62rem; letter-spacing: .38em; text-transform: uppercase;
+      color: rgba(255,255,255,.55);
     }
     #hud-part-spec {
-      font-size: .55rem; letter-spacing: .38em;
-      color: rgba(0,229,255,.5); margin-top: .5rem;
+      font-size: .52rem; letter-spacing: .3em;
+      color: rgba(0,229,255,.35); margin-top: .25rem;
       text-transform: uppercase;
     }
 
@@ -250,48 +247,39 @@
     .wf-section.align-left   { justify-content: flex-start; }
     .wf-section.align-center { justify-content: center; text-align: center; }
 
-    .wf-panel {
-      max-width: 400px; width: 100%;
-      background: rgba(0,0,0,.65);
-      border: 1px solid rgba(0,229,255,.12);
-      backdrop-filter: blur(18px);
-      padding: 2rem 2.4rem;
+    /* Resume info card — minimal, recruiter-focused */
+    .wf-card {
+      max-width: 310px; width: 100%;
+      border-left: 1px solid rgba(0,229,255,.2);
+      padding: 1.4rem 1.8rem;
     }
-    .wf-label {
-      display: block; font-size: .58rem;
-      letter-spacing: .45em; text-transform: uppercase;
-      color: var(--cyan); margin-bottom: 1rem; opacity: .7;
+    .wf-card-eyebrow {
+      font-size: .55rem; letter-spacing: .42em; text-transform: uppercase;
+      color: rgba(0,229,255,.5); margin-bottom: .9rem;
     }
-    .wf-title {
+    .wf-card-name {
       font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-      font-weight: 300; color: var(--white); line-height: 1.1;
-      margin-bottom: 1rem; letter-spacing: -.02em;
+      font-size: clamp(1.5rem, 3vw, 2.1rem);
+      font-weight: 300; color: var(--white);
+      line-height: 1.1; letter-spacing: -.02em; margin-bottom: .6rem;
     }
-    .wf-body {
-      font-size: .78rem; color: rgba(200,225,255,.42);
-      line-height: 2; margin-bottom: 1.4rem;
+    .wf-card-sub {
+      font-size: .7rem; color: rgba(0,229,255,.55);
+      letter-spacing: .06em; margin-bottom: 1.1rem;
     }
-    .wf-stats { display: flex; gap: 2.2rem; margin-top: .5rem; }
-    .wf-stat-num {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: 2.6rem; font-weight: 400;
-      color: var(--cyan); line-height: 1;
+    .wf-divider { width: 20px; height: 1px; background: rgba(0,229,255,.25); margin: .9rem 0; }
+    .wf-card-lines { list-style: none; display: flex; flex-direction: column; gap: .45rem; }
+    .wf-card-lines li {
+      font-size: .72rem; color: rgba(200,225,255,.45); line-height: 1.6;
+      padding-left: .9rem; position: relative;
     }
-    .wf-stat-key {
-      font-size: .58rem; letter-spacing: .2em;
-      text-transform: uppercase; color: rgba(200,225,255,.35);
-      margin-top: .3rem;
+    .wf-card-lines li::before { content: '—'; position: absolute; left: 0; color: rgba(0,229,255,.3); font-size: .6rem; }
+    .wf-card-tags { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .8rem; }
+    .wf-card-tag {
+      font-size: .55rem; letter-spacing: .12em; text-transform: uppercase;
+      border: 1px solid rgba(0,229,255,.18); color: rgba(0,229,255,.5);
+      padding: .22rem .65rem;
     }
-    .wf-tags {
-      display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem;
-    }
-    .wf-tag {
-      font-size: .6rem; letter-spacing: .14em; text-transform: uppercase;
-      border: 1px solid rgba(0,229,255,.2); color: rgba(0,229,255,.55);
-      padding: .28rem .75rem;
-    }
-    .wf-divider { width: 28px; height: 1px; background: rgba(0,229,255,.3); margin: 1rem 0; }
     .wf-final-title {
       font-family: 'Cormorant Garamond', serif;
       font-size: clamp(2.5rem, 5vw, 4rem);
@@ -540,89 +528,63 @@
     </div>
   </section>
 
-  <!-- S2 · Systems orbit (200vh) — camera orbits, parts highlighted -->
-  <section class="wf-section align-right" id="wf-orbit" style="min-height:200vh;">
-    <div class="wf-panel reveal">
-      <span class="wf-label">00 &nbsp;/&nbsp; Systems Check</span>
-      <h2 class="wf-title">18 systems.<br>One structure.</h2>
+  <!-- S2 · Systems orbit (170vh) — camera orbits, parts highlighted -->
+  <section class="wf-section align-right" id="wf-orbit" style="min-height:170vh;">
+    <div class="wf-card reveal">
+      <div class="wf-card-eyebrow">Education</div>
+      <div class="wf-card-name">Zain Dahdul</div>
+      <div class="wf-card-sub">B.S. Mechanical Engineering · UC Berkeley</div>
       <div class="wf-divider"></div>
-      <p class="wf-body">
-        Full structural sweep of the Bell 206 JetRanger III —
-        engine drivetrain, flight controls, rotor assembly,
-        and airframe analyzed component by component.
-      </p>
-      <div class="wf-stats">
-        <div>
-          <div class="wf-stat-num">18</div>
-          <div class="wf-stat-key">Components</div>
-        </div>
-        <div>
-          <div class="wf-stat-num">206</div>
-          <div class="wf-stat-key">Bell Model</div>
-        </div>
-        <div>
-          <div class="wf-stat-num">317</div>
-          <div class="wf-stat-key">SHP Engine</div>
-        </div>
+      <ul class="wf-card-lines">
+        <li>4.8 Weighted GPA · Valedictorian · Long Beach, CA</li>
+        <li>Expected Graduation 2029</li>
+        <li>Phi Kappa Psi — Rush &amp; Internal Social Manager</li>
+        <li>Wind Turbine professional development project</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S3 · Cockpit zoom (120vh) -->
+  <section class="wf-section align-right" id="wf-cockpit" style="min-height:120vh;">
+    <div class="wf-card reveal">
+      <div class="wf-card-eyebrow">Experience · 2024 – Present</div>
+      <div class="wf-card-name">Ocean Lifeguard</div>
+      <div class="wf-card-sub">Long Beach Fire Dept · Marine Safety Division</div>
+      <div class="wf-divider"></div>
+      <ul class="wf-card-lines">
+        <li>Open-ocean emergency response — thousands of beachgoers daily</li>
+        <li>Certified CPR · AED · Advanced First Aid responder</li>
+        <li>100% safety compliance across all Marine Safety assets</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- S4 · Deconstruct (140vh) — exploded view -->
+  <section class="wf-section align-left" id="wf-deconstruct" style="min-height:140vh;">
+    <div class="wf-card reveal">
+      <div class="wf-card-eyebrow">Experience · Jun – Jul 2024</div>
+      <div class="wf-card-name">Engineering Intern</div>
+      <div class="wf-card-sub">BioGas Engineering · California</div>
+      <div class="wf-divider"></div>
+      <ul class="wf-card-lines">
+        <li>Victorville Valley Wastewater Treatment Plant project</li>
+        <li>Biogas capture &amp; conversion system design</li>
+        <li>Industrial-scale CAD-driven engineering workflows</li>
+      </ul>
+      <div class="wf-card-tags">
+        <span class="wf-card-tag">SolidWorks</span>
+        <span class="wf-card-tag">Rapid Prototyping</span>
+        <span class="wf-card-tag">AI Dev</span>
+        <span class="wf-card-tag">Bilingual ES/EN</span>
+        <span class="wf-card-tag">Systems Thinking</span>
       </div>
     </div>
   </section>
 
-  <!-- S3 · Cockpit zoom (160vh) -->
-  <section class="wf-section align-right" id="wf-cockpit" style="min-height:160vh;">
-    <div class="wf-panel reveal">
-      <span class="wf-label">01 &nbsp;/&nbsp; Profile Overview</span>
-      <h2 class="wf-title">Engineering<br>meets action</h2>
-      <div class="wf-divider"></div>
-      <p class="wf-body">
-        Mechanical Engineering student at UC Berkeley — combining
-        design precision with life-or-death experience as a Long Beach
-        FIRE Marine Safety Ocean Lifeguard.
-      </p>
-      <div class="wf-stats">
-        <div>
-          <div class="wf-stat-num">4.8</div>
-          <div class="wf-stat-key">Weighted GPA</div>
-        </div>
-        <div>
-          <div class="wf-stat-num">2+</div>
-          <div class="wf-stat-key">Yrs Experience</div>
-        </div>
-        <div>
-          <div class="wf-stat-num">2029</div>
-          <div class="wf-stat-key">Expected Grad</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- S4 · Deconstruct (180vh) — exploded view -->
-  <section class="wf-section align-left" id="wf-deconstruct" style="min-height:180vh;">
-    <div class="wf-panel reveal">
-      <span class="wf-label">02 &nbsp;/&nbsp; Capabilities</span>
-      <h2 class="wf-title">Deconstructing<br>the toolkit</h2>
-      <div class="wf-divider"></div>
-      <p class="wf-body">
-        Isolating core competencies — each skill group operating
-        independently, combining into a full system.
-      </p>
-      <div class="wf-tags">
-        <span class="wf-tag">SolidWorks CAD</span>
-        <span class="wf-tag">Rapid Prototyping</span>
-        <span class="wf-tag">AI-Assisted Dev</span>
-        <span class="wf-tag">Emergency Medical</span>
-        <span class="wf-tag">Ocean Operations</span>
-        <span class="wf-tag">Bilingual ES/EN</span>
-        <span class="wf-tag">Systems Thinking</span>
-        <span class="wf-tag">Team Leadership</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- S5 · Final CTA (110vh) — reassembled -->
-  <section class="wf-section align-center" id="wf-final" style="min-height:110vh;">
-    <div>
-      <p class="wf-label" style="text-align:center;letter-spacing:.5em;">Bell 206 &nbsp;·&nbsp; 18 Components Isolated</p>
+  <!-- S5 · Final CTA (90vh) — reassembled -->
+  <section class="wf-section align-center" id="wf-final" style="min-height:90vh;">
+    <div style="text-align:center;">
+      <p style="font-size:.55rem;letter-spacing:.45em;text-transform:uppercase;color:rgba(0,229,255,.4);margin-bottom:1.2rem;">Mechanical Engineer · UC Berkeley · 2029</p>
       <h2 class="wf-final-title">Full Profile<br>Below</h2>
       <a href="#about" class="wf-scroll-arrow">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v12M3 9l5 5 5-5"/></svg>
