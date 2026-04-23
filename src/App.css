@@ -161,6 +161,111 @@
   }
 }
 
+/* ── Marquee ── */
+.marquee-outer {
+  width: 100%;
+  overflow: hidden;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+}
+
+.marquee-inner {
+  display: flex;
+  white-space: nowrap;
+  animation: marquee-scroll 28s linear infinite;
+  width: max-content;
+}
+
+.marquee-item {
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+}
+
+.marquee-sep {
+  margin: 0 18px;
+  opacity: 0.45;
+}
+
+@keyframes marquee-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ── Portfolio sections ── */
+.portfolio-section {
+  padding: 48px 48px;
+  text-align: left;
+
+  @media (max-width: 1024px) {
+    padding: 32px 24px;
+  }
+}
+
+.edu-block,
+.exp-block {
+  margin-top: 20px;
+}
+
+.edu-meta,
+.exp-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-bottom: 12px;
+
+  strong {
+    color: var(--text-h);
+    font-size: 17px;
+  }
+
+  span {
+    font-size: 14px;
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.05em;
+  }
+}
+
+.portfolio-list {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  li {
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+}
+
+.contact-section {
+  text-align: center;
+
+  a {
+    color: var(--accent);
+    text-decoration: none;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.08em;
+    font-size: 16px;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+  }
+
+  a:hover {
+    border-bottom-color: var(--accent);
+  }
+}
+
 .ticks {
   position: relative;
   width: 100%;

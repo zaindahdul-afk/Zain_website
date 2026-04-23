@@ -179,6 +179,17 @@ export default function HeroScene() {
           <motion.p className="hs-subtitle" style={{ opacity: subtitleOpacity }}>
             Mechanical Engineering
           </motion.p>
+          <motion.p className="hs-university" style={{ opacity: subtitleOpacity }}>
+            University of California, Berkeley
+          </motion.p>
+          <motion.div className="hs-cta-wrap" style={{ opacity: subtitleOpacity }}>
+            <button
+              className="hs-cta"
+              onClick={() => document.getElementById('contact').scrollIntoView({ behavior: 'smooth' })}
+            >
+              Get in Touch
+            </button>
+          </motion.div>
         </div>
 
         {/* ── Scroll cue ── */}
