@@ -504,7 +504,7 @@
   </ul>
 </nav>
 
-<!-- ══════════ WIREFRAME ZONE (750vh) ══════════ -->
+<!-- ══════════ WIREFRAME ZONE (720vh) ══════════ -->
 <div id="wireframe-zone">
 
   <!-- S1 · Hero (100vh) -->
@@ -528,8 +528,8 @@
     </div>
   </section>
 
-  <!-- S2 · Systems orbit (170vh) — camera orbits, parts highlighted -->
-  <section class="wf-section align-right" id="wf-orbit" style="min-height:170vh;">
+  <!-- S2 · Systems orbit (200vh) — camera orbits, parts highlighted -->
+  <section class="wf-section align-right" id="wf-orbit" style="min-height:200vh;">
     <div class="wf-card reveal">
       <div class="wf-card-eyebrow">Education</div>
       <div class="wf-card-name">Zain Dahdul</div>
@@ -544,8 +544,8 @@
     </div>
   </section>
 
-  <!-- S3 · Cockpit zoom (120vh) -->
-  <section class="wf-section align-right" id="wf-cockpit" style="min-height:120vh;">
+  <!-- S3 · Cockpit zoom (150vh) -->
+  <section class="wf-section align-right" id="wf-cockpit" style="min-height:150vh;">
     <div class="wf-card reveal">
       <div class="wf-card-eyebrow">Experience · 2024 – Present</div>
       <div class="wf-card-name">Ocean Lifeguard</div>
@@ -559,8 +559,8 @@
     </div>
   </section>
 
-  <!-- S4 · Deconstruct (140vh) — exploded view -->
-  <section class="wf-section align-left" id="wf-deconstruct" style="min-height:140vh;">
+  <!-- S4 · Deconstruct (170vh) — exploded view -->
+  <section class="wf-section align-left" id="wf-deconstruct" style="min-height:170vh;">
     <div class="wf-card reveal">
       <div class="wf-card-eyebrow">Experience · Jun – Jul 2024</div>
       <div class="wf-card-name">Engineering Intern</div>
@@ -578,8 +578,8 @@
     </div>
   </section>
 
-  <!-- S5 · Final CTA (90vh) — reassembled -->
-  <section class="wf-section align-center" id="wf-final" style="min-height:90vh;">
+  <!-- S5 · Final CTA (100vh) — reassembled -->
+  <section class="wf-section align-center" id="wf-final" style="min-height:100vh;">
     <div style="text-align:center;">
       <p style="font-size:.55rem;letter-spacing:.45em;text-transform:uppercase;color:rgba(0,229,255,.4);margin-bottom:1.2rem;">Mechanical Engineer · UC Berkeley · 2029</p>
       <h2 class="wf-final-title">Full Profile<br>Below</h2>
@@ -860,7 +860,8 @@
 gsap.registerPlugin(ScrollTrigger);
 
 /* ══════════════════════════════════════════════════════════════
-   THREE.JS — Bell 206 wireframe background (enhanced)
+   THREE.JS — Bell 206B JetRanger III wireframe background
+   Lofted airframe · slow continuous camera rig · exploded view
 ══════════════════════════════════════════════════════════════ */
 (function() {
   const canvas = document.getElementById('bg-canvas');
@@ -870,11 +871,16 @@ gsap.registerPlugin(ScrollTrigger);
   renderer.setClearColor(0x000000, 1);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x000000, 0.018);
+  scene.fog = new THREE.FogExp2(0x000000, 0.016);
 
-  const camera = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, 0.05, 500);
-  camera.position.set(7, 3.5, 9);
-  const lookTarget = { x: 0, y: 0.3, z: -1 };
+  const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.05, 500);
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* Spherical camera rig — one continuous slow orbit instead of
+     point-to-point camera cuts (removes the rushed, whooshing feel) */
+  const rig  = { theta: 0.66, phi: 0.32, radius: 13.2 };
+  const look = { x: 0, y: 0.35, z: -0.6 };
+  const lookV = new THREE.Vector3();
 
   window.addEventListener('resize', () => {
     camera.aspect = innerWidth / innerHeight;
@@ -882,307 +888,494 @@ gsap.registerPlugin(ScrollTrigger);
     renderer.setSize(innerWidth, innerHeight);
   });
 
-  /* ── Materials ── */
-  function mat(hex) { return new THREE.LineBasicMaterial({ color: hex }); }
-  const mMain   = mat(0x000000); // start black, revealed by scan
-  const mDim    = mat(0x000000);
-  const mBright = mat(0x000000);
-  const mCtrl   = mat(0x000000);
-  const mAnnot  = new THREE.LineBasicMaterial({ color: 0x004466, transparent: true, opacity: 0 });
-  const mGrid   = new THREE.LineBasicMaterial({ color: 0x001122, transparent: true, opacity: 0 });
+  /* ── Materials — brightness hierarchy: bright silhouette edges,
+        mid primary structure, dim internal frames ── */
+  function lmat(hex) { return new THREE.LineBasicMaterial({ color: hex }); }
+  const mMain   = lmat(0x000000); // starts black, materializes on load
+  const mDim    = lmat(0x000000);
+  const mBright = lmat(0x000000);
+  const mCtrl   = lmat(0x000000);
+  const mAnnot     = new THREE.LineBasicMaterial({ color: 0x2b7d9e, transparent: true, opacity: 0 });
+  const mAnnotDash = new THREE.LineDashedMaterial({ color: 0x2b7d9e, transparent: true, opacity: 0, dashSize: 0.16, gapSize: 0.11 });
+  const mLeader    = new THREE.LineDashedMaterial({ color: 0x1e6a88, transparent: true, opacity: 0, dashSize: 0.13, gapSize: 0.09 });
+  const mPad       = new THREE.LineBasicMaterial({ color: 0x00506e, transparent: true, opacity: 0 });
 
   /* ── Geometry helpers ── */
-  function edges(geo, m) { return new THREE.LineSegments(new THREE.EdgesGeometry(geo), m); }
-  function box(w,h,d,m)  { return edges(new THREE.BoxGeometry(w,h,d), m||mMain); }
-  function cyl(rt,rb,h,s,m){ return edges(new THREE.CylinderGeometry(rt,rb,h,s||8), m||mMain); }
+  function edges(geo, m) { return new THREE.LineSegments(new THREE.EdgesGeometry(geo), m || mMain); }
+  function box(w, h, d, m) { return edges(new THREE.BoxGeometry(w, h, d), m); }
+  function cyl(rt, rb, h, s, m) { return edges(new THREE.CylinderGeometry(rt, rb, h, s || 8), m); }
   function place(g, mesh, x, y, z, rx, ry, rz) {
     mesh.position.set(x, y, z);
     if (rx !== undefined) mesh.rotation.set(rx, ry, rz);
     g.add(mesh);
+    return mesh;
+  }
+  function v3(p) { return new THREE.Vector3(p[0], p[1], p[2]); }
+  function polyline(pts, m, closed) {
+    const arr = pts.map(v3);
+    if (closed) arr.push(arr[0].clone());
+    return new THREE.Line(new THREE.BufferGeometry().setFromPoints(arr), m || mMain);
+  }
+  function segments(pairs, m) {
+    const arr = [];
+    pairs.forEach(pr => { arr.push(v3(pr[0]), v3(pr[1])); });
+    return new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(arr), m || mDim);
+  }
+  function dashed(pts, m, closed) {
+    const arr = pts.map(v3);
+    if (closed) arr.push(arr[0].clone());
+    const ln = new THREE.Line(new THREE.BufferGeometry().setFromPoints(arr), m);
+    ln.computeLineDistances();
+    return ln;
+  }
+  function circleLine(r, seg, m, mapFn) {
+    const pts = [];
+    for (let i = 0; i <= seg; i++) {
+      const a = i / seg * Math.PI * 2;
+      pts.push(mapFn(Math.cos(a) * r, Math.sin(a) * r));
+    }
+    return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), m);
+  }
+
+  /* Superellipse loft: cross-section station rings + longitudinal
+     stringers — the classic CAD surface-development look */
+  function loft(stations, opts) {
+    opts = opts || {};
+    const seg = 16;
+    const g = new THREE.Group();
+    const rings = stations.map(s => {
+      const e = 2 / (s.e || 2.3);
+      const pts = [];
+      for (let i = 0; i < seg; i++) {
+        const a = i / seg * Math.PI * 2;
+        const c = Math.cos(a), sn = Math.sin(a);
+        pts.push(new THREE.Vector3(
+          Math.sign(c) * Math.pow(Math.abs(c), e) * s.w / 2,
+          s.y + Math.sign(sn) * Math.pow(Math.abs(sn), e) * s.h / 2,
+          s.z
+        ));
+      }
+      return pts;
+    });
+    rings.forEach((pts, i) => {
+      g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.concat([pts[0].clone()])), stations[i].m || mDim));
+    });
+    function stringers(idx, m) {
+      const arr = [];
+      for (let r = 0; r + 1 < rings.length; r++) idx.forEach(ix => arr.push(rings[r][ix], rings[r + 1][ix]));
+      g.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(arr), m));
+    }
+    stringers(opts.mainIdx || [0, 4, 8, 12], opts.mainMat || mMain);
+    stringers(opts.dimIdx || [2, 6, 10, 14], opts.dimMat || mDim);
+    g.userData.rings = rings;
+    return g;
+  }
+
+  /* Soft glow texture for navigation-light sprites */
+  const glowMap = (function() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g2 = c.getContext('2d');
+    const gr = g2.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(255,255,255,1)');
+    gr.addColorStop(0.25, 'rgba(255,255,255,.55)');
+    gr.addColorStop(1, 'rgba(255,255,255,0)');
+    g2.fillStyle = gr;
+    g2.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(c);
+  })();
+  const lights = [];
+  function navLight(g, color, x, y, z, size, kind) {
+    const m = new THREE.SpriteMaterial({ map: glowMap, color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+    const s = new THREE.Sprite(m);
+    s.scale.set(size, size, 1);
+    s.position.set(x, y, z);
+    g.add(s);
+    lights.push({ m, kind });
   }
 
   /* ── Helicopter master group ── */
   const heli = new THREE.Group();
-  heli.rotation.y = 0.3;
+  heli.rotation.y = 0.32;
   heli.position.y = -0.3;
   scene.add(heli);
 
-  /* ── 1. Fuselage ── */
+  /* ── 1. Fuselage — lofted hull, nose-to-boom junction ── */
   const gFuse = new THREE.Group(); heli.add(gFuse);
-  place(gFuse, box(1.45, 0.95, 2.9),        0,  0,     -0.25);
-  place(gFuse, box(0.85, 0.48, 1.35),        0,  0.71,  -1.0);
-  place(gFuse, box(0.78, 0.18, 0.2, mDim),   0,  0.85,  -0.25);
-  place(gFuse, box(1.2,  0.12, 2.5, mDim),   0, -0.53,  -0.3);
-  place(gFuse, box(1.45, 0.95, 0.06, mDim),  0,  0,     -1.7);
-  place(gFuse, box(1.45, 0.95, 0.06, mDim),  0,  0,      0.75);
-  place(gFuse, box(1.52, 0.04, 0.04, mDim),  0, -0.55,   0.68);
-  place(gFuse, box(1.52, 0.04, 0.04, mDim),  0, -0.55,  -0.92);
-  place(gFuse, box(0.04, 0.95, 0.04, mDim), -0.72, 0, -0.25);
-  place(gFuse, box(0.04, 0.95, 0.04, mDim),  0.72, 0, -0.25);
+  const fuseLoft = loft([
+    { z:  2.02, w: 0.46, h: 0.34, y: -0.12, e: 2.0 },
+    { z:  1.82, w: 0.80, h: 0.56, y: -0.07, e: 2.1 },
+    { z:  1.52, w: 1.08, h: 0.78, y: -0.02, e: 2.2 },
+    { z:  1.18, w: 1.30, h: 0.94, y:  0.02, e: 2.35 },
+    { z:  0.82, w: 1.42, h: 1.02, y:  0.03, e: 2.5,  m: mMain },   // front doorpost
+    { z:  0.28, w: 1.46, h: 1.04, y:  0.03, e: 2.6 },
+    { z: -0.32, w: 1.46, h: 1.02, y:  0.03, e: 2.6,  m: mMain },   // rear doorpost
+    { z: -0.92, w: 1.36, h: 0.94, y:  0.06, e: 2.5 },
+    { z: -1.42, w: 1.06, h: 0.76, y:  0.11, e: 2.3 },
+    { z: -1.82, w: 0.70, h: 0.54, y:  0.17, e: 2.1,  m: mMain },   // aft bulkhead
+  ]);
+  gFuse.add(fuseLoft);
+  // Nose cap: forward ring converges to tip
+  const noseTip = [0, -0.13, 2.18];
+  const ring0 = fuseLoft.userData.rings[0];
+  gFuse.add(segments([0, 2, 4, 6, 8, 10, 12, 14].map(ix =>
+    [[ring0[ix].x, ring0[ix].y, ring0[ix].z], noseTip]), mDim));
+  // Belly keel beams
+  gFuse.add(segments([
+    [[-0.58, -0.47, 1.25], [-0.58, -0.47, -1.30]],
+    [[ 0.58, -0.47, 1.25], [ 0.58, -0.47, -1.30]],
+  ], mDim));
+  // Aft cabin doors + windows (fixed panels)
+  [-1, 1].forEach(sx => {
+    const x = sx * 0.738;
+    gFuse.add(polyline([[x, 0.42, -0.06], [x, 0.42, -0.86], [x, -0.40, -0.90], [x, -0.42, -0.06]], mDim, true));
+    gFuse.add(polyline([[x, 0.32, -0.14], [x, 0.32, -0.78], [x, 0.00, -0.80], [x, 0.02, -0.14]], mDim, true));
+  });
+  // Pitot tube, roof VHF blade, belly whip antenna
+  place(gFuse, cyl(0.012, 0.012, 0.34, 4, mBright), 0.18, -0.02, 2.20, Math.PI / 2, 0, 0);
+  gFuse.add(polyline([[0, 0.56, 0.45], [0, 0.74, 0.38], [0, 0.74, 0.30], [0, 0.56, 0.28]], mDim, true));
+  gFuse.add(polyline([[0, -0.50, -0.65], [0, -0.78, -0.72]], mDim));
 
-  /* ── 2. Cockpit ── */
+  /* ── 2. Cockpit glazing — windshield frame, chin + eyebrow windows ── */
   const gCockpit = new THREE.Group(); heli.add(gCockpit);
-  place(gCockpit, edges(new THREE.SphereGeometry(0.76, 7, 5, 0, Math.PI*1.1, 0, Math.PI*0.75)), 0, 0.06, 1.38);
-  place(gCockpit, box(0.04, 0.82, 0.04, mBright), 0,    0.18,  0.88);
-  place(gCockpit, box(1.35, 0.1,  0.75, mDim),    0,   -0.4,   1.2);
-  place(gCockpit, box(1.3,  0.06, 0.06, mBright), 0,    0.6,   0.88);
-  place(gCockpit, box(0.06, 0.82, 1.1),           -0.72, 0.08,  0.42);
-  place(gCockpit, box(0.06, 0.82, 1.1),            0.72, 0.08,  0.42);
-  place(gCockpit, box(1.45, 0.06, 0.06, mDim),    0,   -0.38,   0.88);
+  gCockpit.add(polyline([[0, 0.55, 1.02], [0, 0.30, 1.62], [0, -0.02, 1.98]], mBright));
+  gCockpit.add(polyline([[-0.64, 0.53, 0.84], [-0.52, 0.28, 1.46], [-0.35, -0.04, 1.86]], mBright));
+  gCockpit.add(polyline([[ 0.64, 0.53, 0.84], [ 0.52, 0.28, 1.46], [ 0.35, -0.04, 1.86]], mBright));
+  gCockpit.add(polyline([[-0.64, 0.53, 0.84], [0, 0.55, 1.02], [0.64, 0.53, 0.84]], mBright));
+  gCockpit.add(polyline([[-0.35, -0.04, 1.86], [0, -0.02, 1.98], [0.35, -0.04, 1.86]], mBright));
+  // Chin windows
+  gCockpit.add(polyline([[-0.30, -0.16, 1.96], [-0.13, -0.16, 2.05], [-0.13, -0.38, 1.86], [-0.30, -0.42, 1.74]], mDim, true));
+  gCockpit.add(polyline([[ 0.30, -0.16, 1.96], [ 0.13, -0.16, 2.05], [ 0.13, -0.38, 1.86], [ 0.30, -0.42, 1.74]], mDim, true));
+  // Overhead eyebrow windows
+  gCockpit.add(polyline([[-0.42, 0.56, 0.72], [-0.14, 0.58, 0.78], [-0.14, 0.56, 1.02], [-0.40, 0.52, 0.94]], mDim, true));
+  gCockpit.add(polyline([[ 0.42, 0.56, 0.72], [ 0.14, 0.58, 0.78], [ 0.14, 0.56, 1.02], [ 0.40, 0.52, 0.94]], mDim, true));
 
-  /* ── 3. Left door ── */
-  const gDoorL = new THREE.Group(); heli.add(gDoorL);
-  place(gDoorL, box(0.055, 0.72, 1.15),      -0.74, 0.06,  0.42);
-  place(gDoorL, box(0.055, 0.32, 0.52, mDim),-0.74, 0.22,  0.4);
-  place(gDoorL, box(0.055, 0.04, 1.15, mDim),-0.74, 0.42,  0.42);
+  /* ── 3/4. Crew doors — frame, window, handle ── */
+  function doorPanel(sx) {
+    const g = new THREE.Group();
+    const x = sx * 0.735;
+    g.add(polyline([[x, 0.44, 0.86], [x, 0.44, 0.02], [x, -0.42, -0.02], [x, -0.44, 0.80], [x, 0.10, 0.92]], mMain, true));
+    g.add(polyline([[x, 0.34, 0.80], [x, 0.34, 0.14], [x, 0.02, 0.12], [x, 0.04, 0.78]], mDim, true));
+    g.add(polyline([[x, -0.06, 0.30], [x, -0.06, 0.14]], mBright));
+    return g;
+  }
+  const gDoorL = doorPanel(-1); heli.add(gDoorL);
+  const gDoorR = doorPanel(1);  heli.add(gDoorR);
 
-  /* ── 4. Right door ── */
-  const gDoorR = new THREE.Group(); heli.add(gDoorR);
-  place(gDoorR, box(0.055, 0.72, 1.15),       0.74, 0.06,  0.42);
-  place(gDoorR, box(0.055, 0.32, 0.52, mDim), 0.74, 0.22,  0.4);
-  place(gDoorR, box(0.055, 0.04, 1.15, mDim), 0.74, 0.42,  0.42);
-
-  /* ── 5. Controls / instrument panel ── */
+  /* ── 5. Instrument panel + flight controls ── */
   const gCtrl = new THREE.Group(); heli.add(gCtrl);
-  place(gCtrl, box(0.52, 0.07, 0.5,  mCtrl),  -0.28, -0.12, 0.55);
-  place(gCtrl, box(0.52, 0.62, 0.07, mCtrl),  -0.28,  0.19, 0.33);
-  place(gCtrl, edges(new THREE.CylinderGeometry(0.022, 0.03, 0.52, 6), mBright), -0.08, -0.01, 0.62, 0.12, 0, 0);
-  place(gCtrl, box(0.15, 0.08, 0.08, mBright),-0.08,  0.25, 0.66);
-  place(gCtrl, edges(new THREE.CylinderGeometry(0.018, 0.018, 0.6, 6), mCtrl), -0.52, -0.03, 0.48, 0, 0, -0.38);
-  place(gCtrl, box(1.22, 0.62, 0.06, mBright), 0,     0.14, 0.9);
-  place(gCtrl, box(1.12, 0.07, 0.06, mDim),    0,     0.32, 0.91);
-  place(gCtrl, box(1.12, 0.07, 0.06, mDim),    0,     0.14, 0.91);
-  place(gCtrl, box(1.12, 0.07, 0.06, mDim),    0,    -0.06, 0.91);
-  place(gCtrl, box(0.06, 0.62, 0.06, mDim),  -0.38,   0.14, 0.91);
-  place(gCtrl, box(0.06, 0.62, 0.06, mDim),   0.38,   0.14, 0.91);
+  place(gCtrl, box(1.24, 0.60, 0.06, mBright), 0, 0.16, 0.92);   // panel
+  place(gCtrl, box(1.16, 0.05, 0.22, mDim), 0, 0.48, 0.84);      // glareshield
+  place(gCtrl, box(0.30, 0.42, 0.05, mDim), 0.16, 0.12, 0.955);  // radio stack
+  // Gauge dials, two rows of three (pilot side)
+  [-0.44, -0.31, -0.18].forEach(gx => {
+    [0.315, 0.175].forEach(gy => {
+      gCtrl.add(circleLine(0.048, 18, mCtrl, (u, v) => new THREE.Vector3(gx + u, gy + v, 0.952)));
+    });
+  });
+  place(gCtrl, box(0.34, 0.50, 0.40, mDim), 0, -0.28, 0.55);     // center pedestal
+  place(gCtrl, edges(new THREE.CylinderGeometry(0.016, 0.022, 0.46, 5), mCtrl), -0.30, -0.10, 0.42, 0.16, 0, 0);
+  place(gCtrl, edges(new THREE.CylinderGeometry(0.016, 0.022, 0.46, 5), mCtrl),  0.30, -0.10, 0.42, 0.16, 0, 0);
+  place(gCtrl, edges(new THREE.CylinderGeometry(0.014, 0.014, 0.52, 5), mCtrl), -0.58, -0.16, 0.20, 0, 0, -0.42);
+  place(gCtrl, box(0.08, 0.12, 0.03, mDim), -0.40, -0.34, 0.98); // pedals
+  place(gCtrl, box(0.08, 0.12, 0.03, mDim), -0.20, -0.34, 0.98);
 
-  /* ── 6. Engine cowling (hinged access panels + ventilation) ── */
+  /* ── 6. Cabin interior — crew seats + passenger bench ── */
+  const gInterior = new THREE.Group(); heli.add(gInterior);
+  [-0.32, 0.32].forEach(sx => {
+    place(gInterior, box(0.46, 0.06, 0.44, mDim), sx, -0.26, 0.36);
+    place(gInterior, box(0.46, 0.52, 0.06, mDim), sx, 0.02, 0.12, -0.08, 0, 0);
+  });
+  place(gInterior, box(1.24, 0.06, 0.42, mDim), 0, -0.24, -0.52);
+  place(gInterior, box(1.24, 0.50, 0.06, mDim), 0, 0.04, -0.76, -0.06, 0, 0);
+
+  /* ── 7. Engine cowling — lofted fairing + turbine internals ── */
   const gEngine = new THREE.Group(); heli.add(gEngine);
-  place(gEngine, box(1.35, 0.62, 1.38),           0,    0.56,  -1.06);
-  place(gEngine, box(1.37, 0.04, 1.38, mDim),     0,    0.76,  -1.06);
-  place(gEngine, box(1.37, 0.04, 1.38, mDim),     0,    0.34,  -1.06);
-  place(gEngine, box(0.04, 0.62, 1.38, mBright), -0.64, 0.56,  -1.06);
-  place(gEngine, box(0.04, 0.62, 1.38, mBright),  0.64, 0.56,  -1.06);
-  place(gEngine, box(1.35, 0.04, 1.38, mBright),  0,    0.87,  -1.06);
-  // Ventilation louvers (rear firewall)
-  place(gEngine, box(1.1, 0.04, 0.04, mDim), 0, 0.70, -1.76);
-  place(gEngine, box(1.1, 0.04, 0.04, mDim), 0, 0.60, -1.76);
-  place(gEngine, box(1.1, 0.04, 0.04, mDim), 0, 0.50, -1.76);
-  place(gEngine, box(1.1, 0.04, 0.04, mDim), 0, 0.40, -1.76);
-  // Panel fastener lines
-  place(gEngine, box(0.04, 0.04, 1.38, mDim), -0.3, 0.85, -1.06);
-  place(gEngine, box(0.04, 0.04, 1.38, mDim),  0.3, 0.85, -1.06);
+  gEngine.add(loft([
+    { z: -0.40, w: 1.06, h: 0.34, y: 0.72, e: 2.4, m: mMain },
+    { z: -0.78, w: 1.00, h: 0.40, y: 0.74, e: 2.4 },
+    { z: -1.18, w: 0.92, h: 0.38, y: 0.72, e: 2.3 },
+    { z: -1.55, w: 0.74, h: 0.30, y: 0.66, e: 2.2, m: mMain },
+    { z: -1.80, w: 0.52, h: 0.22, y: 0.58, e: 2.1 },
+  ]));
+  for (let i = 0; i < 4; i++) place(gEngine, box(0.56, 0.03, 0.03, mDim), 0, 0.44 + i * 0.09, -1.86);
+  // Turbine spool + compressor / power-turbine discs
+  place(gEngine, cyl(0.10, 0.13, 0.55, 8, mDim), 0, 0.72, -0.95, Math.PI / 2, 0, 0);
+  place(gEngine, edges(new THREE.CylinderGeometry(0.15, 0.15, 0.04, 10), mDim), 0, 0.72, -1.25, Math.PI / 2, 0, 0);
+  place(gEngine, edges(new THREE.CylinderGeometry(0.13, 0.13, 0.04, 10), mDim), 0, 0.72, -0.62, Math.PI / 2, 0, 0);
 
-  /* ── 7. Main transmission housing ── */
+  /* ── 8. Main transmission ── */
   const gTransmission = new THREE.Group(); heli.add(gTransmission);
-  place(gTransmission, cyl(0.44, 0.48, 0.60, 8),        0, 0.73, -0.42);
-  place(gTransmission, cyl(0.26, 0.30, 0.22, 8, mBright),0, 1.13, -0.42);
-  place(gTransmission, cyl(0.48, 0.52, 0.09, 8, mDim),  0, 0.47, -0.42);
-  // Mounting legs (4)
+  place(gTransmission, cyl(0.44, 0.48, 0.60, 8), 0, 0.73, -0.42);
+  place(gTransmission, cyl(0.26, 0.30, 0.22, 8, mBright), 0, 1.13, -0.42);
+  place(gTransmission, cyl(0.48, 0.52, 0.09, 8, mDim), 0, 0.47, -0.42);
   for (let i = 0; i < 4; i++) {
     const a = i * Math.PI / 2 + Math.PI / 4;
     place(gTransmission, cyl(0.036, 0.036, 0.16, 6, mDim),
       Math.cos(a) * 0.40, 0.68, -0.42 + Math.sin(a) * 0.40);
   }
-  // Oil cooler port
   place(gTransmission, box(0.24, 0.18, 0.07, mDim), 0.50, 0.73, -0.42);
-  place(gTransmission, box(0.24, 0.18, 0.07, mDim),-0.50, 0.73, -0.42);
+  place(gTransmission, box(0.24, 0.18, 0.07, mDim), -0.50, 0.73, -0.42);
 
-  /* ── 8. Rotor mast ── */
+  /* ── 9. Rotor mast ── */
   const gMast = new THREE.Group(); heli.add(gMast);
-  place(gMast, cyl(0.07, 0.09, 0.82, 8),      0, 1.25, -0.42);
-  place(gMast, cyl(0.22, 0.26, 0.35, 8),      0, 0.96, -0.42);
+  place(gMast, cyl(0.07, 0.09, 0.82, 8), 0, 1.25, -0.42);
+  place(gMast, cyl(0.22, 0.26, 0.35, 8), 0, 0.96, -0.42);
   place(gMast, edges(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 8), mBright), 0, 1.7, -0.42);
-  place(gMast, cyl(0.022, 0.022, 0.28, 5, mDim),  0.3, 1.56, -0.42);
+  place(gMast, cyl(0.022, 0.022, 0.28, 5, mDim), 0.3, 1.56, -0.42);
   place(gMast, cyl(0.022, 0.022, 0.28, 5, mDim), -0.3, 1.56, -0.42);
 
-  /* ── 9. Swashplate + pitch links ── */
+  /* ── 10. Swashplate + pitch links ── */
   const gSwashplate = new THREE.Group(); heli.add(gSwashplate);
   place(gSwashplate, cyl(0.27, 0.27, 0.06, 12, mBright), 0, 1.38, -0.42);
-  place(gSwashplate, cyl(0.21, 0.21, 0.06, 12, mDim),    0, 1.46, -0.42);
-  // Scissors link
+  place(gSwashplate, cyl(0.21, 0.21, 0.06, 12, mDim), 0, 1.46, -0.42);
   place(gSwashplate, box(0.035, 0.32, 0.035, mCtrl), 0.20, 1.50, -0.42);
-  // 4 pitch links
-  [0, Math.PI*0.5, Math.PI, Math.PI*1.5].forEach(a => {
+  [0, Math.PI * 0.5, Math.PI, Math.PI * 1.5].forEach(a => {
     const px = Math.cos(a) * 0.20;
     const pz = -0.42 + Math.sin(a) * 0.20;
     place(gSwashplate, cyl(0.018, 0.018, 0.30, 5, mCtrl), px, 1.58, pz, 0.22, 0, a);
   });
-  // Anti-rotation guide
   place(gSwashplate, box(0.035, 0.035, 0.24, mDim), 0, 1.42, -0.24);
 
-  /* ── 10. Main rotor blades — group origin at mast head ── */
+  /* ── 11. Main rotor — teetering hub, grips, blade planforms ── */
   const gRotor = new THREE.Group();
   gRotor.position.set(0, 1.7, -0.42);
   heli.add(gRotor);
-  place(gRotor, box(4.1, 0.07, 0.24),         2.25,  0,     0);
-  place(gRotor, box(4.1, 0.04, 0.18, mDim),   2.25, -0.06,  0);
-  place(gRotor, box(4.1, 0.07, 0.24),        -2.25,  0,     0);
-  place(gRotor, box(4.1, 0.04, 0.18, mDim), -2.25, -0.06,  0);
-  place(gRotor, cyl(0.04, 0.04, 0.22, 5, mDim),  0.8,  0,  0);
-  place(gRotor, cyl(0.04, 0.04, 0.22, 5, mDim), -0.8,  0,  0);
-  // Blade tip caps
-  place(gRotor, box(0.12, 0.09, 0.28, mBright),  4.1,  0,  0);
-  place(gRotor, box(0.12, 0.09, 0.28, mBright), -4.1,  0,  0);
-  // Hub plate
-  place(gRotor, edges(new THREE.CylinderGeometry(0.18, 0.18, 0.08, 8), mBright), 0, 0, 0);
+  place(gRotor, box(1.16, 0.13, 0.20, mBright), 0, 0, 0);
+  place(gRotor, edges(new THREE.CylinderGeometry(0.17, 0.17, 0.09, 10), mBright), 0, 0, 0);
+  [-1, 1].forEach(sx => {
+    place(gRotor, cyl(0.055, 0.062, 0.42, 6, mDim), sx * 0.52, 0, 0, 0, 0, Math.PI / 2);
+    place(gRotor, box(0.10, 0.05, 0.30, mCtrl), sx * 0.30, -0.05, sx * 0.12);
+    const c = 0.115;
+    gRotor.add(polyline([
+      [sx * 0.34, 0, c], [sx * 3.92, 0, c], [sx * 4.08, 0, c * 0.5],
+      [sx * 4.08, 0, -c * 0.5], [sx * 3.92, 0, -c], [sx * 0.34, 0, -c]
+    ], mMain, true));
+    gRotor.add(polyline([[sx * 0.34, 0, c * 0.35], [sx * 4.08, 0, c * 0.35]], mDim));
+    gRotor.add(segments([1.1, 1.9, 2.7, 3.5].map(rx => [[sx * rx, 0, c], [sx * rx, 0, -c]]), mDim));
+    place(gRotor, box(0.14, 0.06, 0.26, mBright), sx * 4.02, 0, 0);
+  });
+  // Rotor blur disc — opacity tracks rotor speed
+  const discMat = new THREE.MeshBasicMaterial({ color: 0x00cfe8, transparent: true, opacity: 0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+  const discRing = new THREE.Mesh(new THREE.RingGeometry(3.82, 4.14, 64), discMat);
+  discRing.rotation.x = -Math.PI / 2;
+  gRotor.add(discRing);
+  const discFillMat = discMat.clone();
+  const discFill = new THREE.Mesh(new THREE.CircleGeometry(3.82, 48), discFillMat);
+  discFill.rotation.x = -Math.PI / 2;
+  gRotor.add(discFill);
 
-  /* ── 11. Exhaust stack (right side) ── */
+  /* ── 12. Exhaust stack ── */
   const gExhaust = new THREE.Group(); heli.add(gExhaust);
-  place(gExhaust, cyl(0.082, 0.095, 0.52, 7),       0.72,  0.62, -1.00, 0, 0, 0.24);
+  place(gExhaust, cyl(0.082, 0.095, 0.52, 7), 0.72, 0.62, -1.00, 0, 0, 0.24);
   place(gExhaust, cyl(0.098, 0.112, 0.10, 7, mBright), 0.72, 0.83, -1.18);
-  // IR suppressor rings
   place(gExhaust, edges(new THREE.CylinderGeometry(0.135, 0.135, 0.025, 7), mDim), 0.72, 0.77, -1.14);
   place(gExhaust, edges(new THREE.CylinderGeometry(0.122, 0.122, 0.025, 7), mDim), 0.72, 0.71, -1.10);
   place(gExhaust, edges(new THREE.CylinderGeometry(0.110, 0.110, 0.025, 7), mDim), 0.72, 0.65, -1.06);
-  // Heat shield plate
-  place(gExhaust, box(0.28, 0.26, 0.48, mDim),  0.59, 0.62, -1.00);
+  place(gExhaust, box(0.28, 0.26, 0.48, mDim), 0.59, 0.62, -1.00);
 
-  /* ── 12. Air intake (left side) ── */
+  /* ── 13. Air intake ── */
   const gIntake = new THREE.Group(); heli.add(gIntake);
-  place(gIntake, box(0.07, 0.50, 0.44),          -0.74, 0.56, -0.72);
+  place(gIntake, box(0.07, 0.50, 0.44), -0.74, 0.56, -0.72);
   place(gIntake, box(0.12, 0.56, 0.50, mBright), -0.80, 0.56, -0.72);
-  // Intake grille bars
   for (let i = 0; i < 6; i++) {
     place(gIntake, box(0.07, 0.028, 0.44, mDim), -0.74, 0.32 + i * 0.08, -0.72);
   }
-  // Particle separator vane
   place(gIntake, box(0.14, 0.30, 0.28, mDim), -0.88, 0.62, -0.78);
   place(gIntake, box(0.14, 0.04, 0.28, mDim), -0.88, 0.46, -0.78);
 
-  /* ── 13. Tail boom ── */
+  /* ── 14. Tail boom — tapered tube, frames, stringers, driveline,
+        mid-boom horizontal stabilizer with end plates ── */
   const gBoom = new THREE.Group(); heli.add(gBoom);
-  place(gBoom, cyl(0.14, 0.30, 3.85, 8), 0, -0.08, -2.82, Math.PI*0.5, 0, 0);
-  place(gBoom, edges(new THREE.CylinderGeometry(0.28, 0.28, 0.05, 8), mDim), 0, -0.08, -1.9);
-  place(gBoom, edges(new THREE.CylinderGeometry(0.22, 0.22, 0.05, 8), mDim), 0, -0.08, -2.65);
-  place(gBoom, edges(new THREE.CylinderGeometry(0.17, 0.17, 0.05, 8), mDim), 0, -0.08, -3.4);
-  place(gBoom, box(0.1, 0.1, 0.1, mBright), 0, -0.08, -4.7);
-
-  /* ── 14. Tail boom stringers (4 longitudinal lines) ── */
-  const gStringers = new THREE.Group(); heli.add(gStringers);
-  [0, Math.PI*0.5, Math.PI, Math.PI*1.5].forEach(a => {
-    const r = 0.22;
-    const sx = Math.cos(a) * r;
-    const sy = -0.08 + Math.sin(a) * r;
-    place(gStringers, box(0.028, 0.028, 1.55, mDim), sx,        sy,        -2.05);
-    place(gStringers, box(0.028, 0.028, 1.55, mDim), sx * 0.78, sy * 0.78, -2.88);
-    place(gStringers, box(0.028, 0.028, 0.90, mDim), sx * 0.58, sy * 0.58, -4.05);
+  place(gBoom, cyl(0.14, 0.30, 3.85, 10), 0, -0.08, -2.82, Math.PI * 0.5, 0, 0);
+  function boomR(bz) { return 0.30 - 0.16 * ((-0.895 - bz) / 3.85); }
+  [-1.95, -2.5, -3.05, -3.6, -4.15].forEach(bz => {
+    gBoom.add(circleLine(boomR(bz), 20, mDim, (u, v) => new THREE.Vector3(u, -0.08 + v, bz)));
   });
+  [0, Math.PI / 2, Math.PI, Math.PI * 1.5].forEach(a => {
+    const pts = [];
+    for (let k = 0; k <= 6; k++) {
+      const bz = -1.0 - k * 0.62;
+      const br = boomR(bz);
+      pts.push(new THREE.Vector3(Math.cos(a) * br, -0.08 + Math.sin(a) * br, bz));
+    }
+    gBoom.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mDim));
+  });
+  // Tail rotor drive shaft + hanger bearings
+  place(gBoom, cyl(0.024, 0.024, 3.5, 6, mBright), 0, 0.19, -2.75, Math.PI / 2 - 0.04, 0, 0);
+  [-1.6, -2.4, -3.2, -4.0].forEach(bz => {
+    const by = 0.26 + (bz + 1.0) * (0.14 / 3.5);
+    gBoom.add(circleLine(0.045, 10, mDim, (u, v) => new THREE.Vector3(u, by + v, bz)));
+  });
+  place(gBoom, box(0.1, 0.1, 0.1, mBright), 0, -0.08, -4.7);
+  // Horizontal stabilizer
+  const stabY = 0.14;
+  gBoom.add(polyline([[-0.85, stabY, -2.99], [0.85, stabY, -2.99], [0.90, stabY, -3.10], [0.85, stabY, -3.31], [-0.85, stabY, -3.31], [-0.90, stabY, -3.10]], mMain, true));
+  gBoom.add(polyline([[-0.85, stabY, -3.13], [0.85, stabY, -3.13]], mDim));
+  [-1, 1].forEach(sx => {
+    gBoom.add(polyline([[sx * 0.87, stabY + 0.16, -3.02], [sx * 0.87, stabY + 0.16, -3.30], [sx * 0.87, stabY - 0.14, -3.34], [sx * 0.87, stabY - 0.14, -2.98]], mDim, true));
+  });
+  navLight(gBoom, 0xff3344, -0.90, stabY, -3.15, 0.15, 'nav');
+  navLight(gBoom, 0x33ff66,  0.90, stabY, -3.15, 0.13, 'nav');
+  navLight(gBoom, 0xffffff,  0, -0.06, -4.78, 0.11, 'nav');
 
-  /* ── 15. Tail fin ── */
+  /* ── 15. Vertical fin — swept profile, twin sheets ── */
   const gFin = new THREE.Group(); heli.add(gFin);
-  place(gFin, box(0.065, 1.05, 0.72),          0,    0.38, -4.66);
-  place(gFin, box(1.75,  0.065, 0.42),          0,   -0.04, -4.52);
-  place(gFin, box(0.065, 0.28, 0.38, mDim),     0,   -0.32, -4.52);
-  place(gFin, box(0.065, 0.35, 0.35, mDim),     0,   -0.18, -4.3);
-  place(gFin, box(0.065, 0.06, 0.72, mBright),  0,    0.85, -4.66);
+  const finPts = [[-0.34, -4.44], [0.16, -4.32], [0.86, -4.48], [1.02, -4.72], [0.94, -4.92], [0.42, -4.98], [-0.10, -4.90], [-0.34, -4.72]];
+  [-0.033, 0.033].forEach(fx => gFin.add(polyline(finPts.map(pp => [fx, pp[0], pp[1]]), mMain, true)));
+  gFin.add(segments(finPts.map(pp => [[-0.033, pp[0], pp[1]], [0.033, pp[0], pp[1]]]), mDim));
+  gFin.add(polyline([[0, 1.02, -4.72], [0, 0.94, -4.92]], mBright));
+  // 90° tail-rotor gearbox at fin
+  place(gFin, box(0.14, 0.20, 0.18, mDim), -0.06, 0.42, -4.62);
+  navLight(gFin, 0xff2233, 0, 1.10, -4.74, 0.19, 'beacon');
 
-  /* ── 16. Tail rotor — group origin at hub ── */
+  /* ── 16. Tail rotor (port side) ── */
   const gTRot = new THREE.Group();
-  gTRot.position.set(0.18, 0.55, -4.66);
+  gTRot.position.set(-0.20, 0.55, -4.66);
   heli.add(gTRot);
-  place(gTRot, edges(new THREE.CylinderGeometry(0.1, 0.1, 0.14, 8), mMain), 0, 0, 0, 0, 0, Math.PI*0.5);
-  place(gTRot, box(0.08, 1.25, 0.1), 0, 0, 0);
-  place(gTRot, box(0.08, 0.1, 1.25), 0, 0, 0);
-  place(gTRot, cyl(0.02, 0.02, 0.28, 5, mDim), 0, 0.27, 0, 0, 0, 0.35);
-  // Blade tips
-  place(gTRot, box(0.06, 0.10, 0.14, mBright), 0,  0.62, 0);
-  place(gTRot, box(0.06, 0.10, 0.14, mBright), 0, -0.62, 0);
+  place(gTRot, edges(new THREE.CylinderGeometry(0.075, 0.075, 0.14, 8), mBright), 0, 0, 0, 0, 0, Math.PI * 0.5);
+  [-1, 1].forEach(sy => {
+    const c = 0.045;
+    gTRot.add(polyline([
+      [0, sy * 0.10, c], [0, sy * 0.60, c], [0, sy * 0.66, 0], [0, sy * 0.60, -c], [0, sy * 0.10, -c]
+    ], mMain, true));
+    gTRot.add(polyline([[0, sy * 0.10, 0], [0, sy * 0.66, 0]], mDim));
+  });
+  place(gTRot, cyl(0.014, 0.014, 0.22, 5, mCtrl), 0, 0.17, 0, 0, 0, 0.4);
+  const tDiscMat = discMat.clone();
+  const tDisc = new THREE.Mesh(new THREE.RingGeometry(0.50, 0.68, 40), tDiscMat);
+  tDisc.rotation.y = Math.PI / 2;
+  gTRot.add(tDisc);
 
-  /* ── 17. Left skid ── */
-  const gSkidL = new THREE.Group(); heli.add(gSkidL);
-  place(gSkidL, box(0.045, 0.045, 3.4),         -0.74, -0.78, -0.2);
-  place(gSkidL, cyl(0.028, 0.028, 0.52, 5),     -0.74, -0.55,  0.68, 0, 0,  0.14);
-  place(gSkidL, cyl(0.028, 0.028, 0.52, 5),     -0.74, -0.55, -0.92, 0, 0, -0.08);
-  place(gSkidL, box(0.045, 0.045, 0.5, mDim),   -0.74, -0.78,  1.32);
-  place(gSkidL, box(0.045, 0.045, 0.12, mDim),  -0.74, -0.78, -1.9);
+  /* ── 17/18. Landing skids — tubes, cross struts, toes, steps ── */
+  function skid(sx) {
+    const g = new THREE.Group();
+    const x = sx * 0.76;
+    place(g, cyl(0.030, 0.030, 3.30, 6), x, -0.80, -0.15, Math.PI / 2, 0, 0);
+    place(g, cyl(0.030, 0.030, 0.42, 6, mDim), x, -0.72, 1.62, Math.PI / 2 - 0.5, 0, 0);
+    place(g, cyl(0.030, 0.030, 0.55, 6), x, -0.53, 0.70, 0, 0, sx * 0.20);
+    place(g, cyl(0.030, 0.030, 0.55, 6), x, -0.53, -0.95, 0, 0, sx * 0.20);
+    place(g, box(0.16, 0.03, 0.30, mDim), x * 0.92, -0.62, 0.70);
+    return g;
+  }
+  const gSkidL = skid(-1); heli.add(gSkidL);
+  const gSkidR = skid(1);  heli.add(gSkidR);
 
-  /* ── 18. Right skid ── */
-  const gSkidR = new THREE.Group(); heli.add(gSkidR);
-  place(gSkidR, box(0.045, 0.045, 3.4),          0.74, -0.78, -0.2);
-  place(gSkidR, cyl(0.028, 0.028, 0.52, 5),      0.74, -0.55,  0.68, 0, 0, -0.14);
-  place(gSkidR, cyl(0.028, 0.028, 0.52, 5),      0.74, -0.55, -0.92, 0, 0,  0.08);
-  place(gSkidR, box(0.045, 0.045, 0.5, mDim),    0.74, -0.78,  1.32);
-  place(gSkidR, box(0.045, 0.045, 0.12, mDim),   0.74, -0.78, -1.9);
-
-  /* ── Grid ── */
-  const grid = new THREE.GridHelper(28, 28, 0x004d99, 0x002244);
+  /* ── Ground plane: engineering grid + helipad marking ── */
+  const grid = new THREE.GridHelper(36, 36, 0x00364e, 0x00161f);
   grid.position.y = -1.35;
   const gridMats = Array.isArray(grid.material) ? grid.material : [grid.material];
   gridMats.forEach(m => { m.transparent = true; m.opacity = 0; });
   scene.add(grid);
 
+  const pad = new THREE.Group();
+  pad.position.y = -1.345;
+  pad.add(circleLine(3.55, 72, mPad, (u, v) => new THREE.Vector3(u, 0, v)));
+  pad.add(circleLine(2.85, 64, mPad, (u, v) => new THREE.Vector3(u, 0, v)));
+  pad.add(polyline([[-0.55, 0, -0.95], [-0.55, 0, 0.95]], mPad));
+  pad.add(polyline([[0.55, 0, -0.95], [0.55, 0, 0.95]], mPad));
+  pad.add(polyline([[-0.55, 0, 0], [0.55, 0, 0]], mPad));
+  scene.add(pad);
+
   /* ── Ambient particles ── */
   const ptGeo = new THREE.BufferGeometry();
   const pa = [];
-  for (let i = 0; i < 280; i++) pa.push((Math.random()-.5)*36, (Math.random()-.5)*24, (Math.random()-.5)*36);
+  for (let i = 0; i < 260; i++) pa.push((Math.random() - .5) * 36, (Math.random() - .5) * 24, (Math.random() - .5) * 36);
   ptGeo.setAttribute('position', new THREE.Float32BufferAttribute(pa, 3));
-  scene.add(new THREE.Points(ptGeo, new THREE.PointsMaterial({ color: 0x001a22, size: 0.04 })));
+  scene.add(new THREE.Points(ptGeo, new THREE.PointsMaterial({ color: 0x00202b, size: 0.045 })));
 
-  /* ── Annotation lines (measurement) ── */
+  /* ── Annotation layer — dimension lines, station ticks, tip-path circles ── */
   const annotGroup = new THREE.Group(); heli.add(annotGroup);
-  function annotLine(x1,y1,z1, x2,y2,z2) {
+  function annotLine(x1, y1, z1, x2, y2, z2) {
     const geo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(x1,y1,z1), new THREE.Vector3(x2,y2,z2)
+      new THREE.Vector3(x1, y1, z1), new THREE.Vector3(x2, y2, z2)
     ]);
     return new THREE.Line(geo, mAnnot);
   }
-  // Overall length (nose to tail)
-  annotGroup.add(annotLine(-0.9,-1.5, 2.2, -0.9,-1.5,-5.2));
-  annotGroup.add(annotLine(-0.7,-1.5, 2.2, -1.1,-1.5, 2.2));
-  annotGroup.add(annotLine(-0.7,-1.5,-5.2, -1.1,-1.5,-5.2));
-  // Rotor span
-  annotGroup.add(annotLine(-5.1, 2.05,-0.42,  5.1, 2.05,-0.42));
-  annotGroup.add(annotLine(-5.1, 1.85,-0.42, -5.1, 2.25,-0.42));
-  annotGroup.add(annotLine( 5.1, 1.85,-0.42,  5.1, 2.25,-0.42));
-  // Height
-  annotGroup.add(annotLine(-2.3,-1.35, 0.5, -2.3, 2.1, 0.5));
-  annotGroup.add(annotLine(-2.1,-1.35, 0.5, -2.5,-1.35, 0.5));
-  annotGroup.add(annotLine(-2.1, 2.1,  0.5, -2.5, 2.1,  0.5));
+  // Overall length datum + station ticks
+  annotGroup.add(annotLine(-1.0, -1.5, 2.3, -1.0, -1.5, -5.05));
+  annotGroup.add(annotLine(-0.85, -1.5, 2.3, -1.15, -1.5, 2.3));
+  annotGroup.add(annotLine(-0.85, -1.5, -5.05, -1.15, -1.5, -5.05));
+  for (let i = 1; i < 5; i++) {
+    const sz = 2.3 - i * 1.47;
+    annotGroup.add(annotLine(-0.93, -1.5, sz, -1.07, -1.5, sz));
+  }
+  // Rotor span datum
+  annotGroup.add(annotLine(-4.35, 2.05, -0.42, 4.35, 2.05, -0.42));
+  annotGroup.add(annotLine(-4.35, 1.88, -0.42, -4.35, 2.22, -0.42));
+  annotGroup.add(annotLine(4.35, 1.88, -0.42, 4.35, 2.22, -0.42));
+  // Height datum
+  annotGroup.add(annotLine(-2.4, -1.35, 0.5, -2.4, 2.1, 0.5));
+  annotGroup.add(annotLine(-2.25, -1.35, 0.5, -2.55, -1.35, 0.5));
+  annotGroup.add(annotLine(-2.25, 2.1, 0.5, -2.55, 2.1, 0.5));
+  // Dashed tip-path circles (main + tail rotor)
+  const tipPts = [];
+  for (let i = 0; i <= 72; i++) {
+    const a = i / 72 * Math.PI * 2;
+    tipPts.push([Math.cos(a) * 4.22, 1.7, -0.42 + Math.sin(a) * 4.22]);
+  }
+  annotGroup.add(dashed(tipPts, mAnnotDash));
+  const ttipPts = [];
+  for (let i = 0; i <= 40; i++) {
+    const a = i / 40 * Math.PI * 2;
+    ttipPts.push([-0.21, 0.55 + Math.cos(a) * 0.76, -4.66 + Math.sin(a) * 0.76]);
+  }
+  annotGroup.add(dashed(ttipPts, mAnnotDash));
 
-  /* ── Selector box (highlights active part during systems check) ── */
+  /* ── Selector box (systems-check highlight) ── */
   const gSel = new THREE.Group(); heli.add(gSel);
   const selMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
-  const selBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)), selMat);
+  const selBox = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1)), selMat);
   gSel.add(selBox);
 
-  /* ── Highlight definitions (for systems check orbit phase) ── */
   const highlightDefs = [
-    { name: 'FUSELAGE',          spec: 'SEMI-MONOCOQUE AIRFRAME',   pos: [0,0,-0.25],          sz: [2.2,1.5,3.6] },
-    { name: 'ENGINE COWLING',    spec: 'ALLISON 250-C20B  317 SHP', pos: [0,0.56,-1.06],        sz: [1.8,0.9,1.8] },
-    { name: 'MAIN GEARBOX',      spec: 'PRIMARY DRIVETRAIN',        pos: [0,0.80,-0.42],        sz: [1.4,1.0,1.4] },
-    { name: 'COCKPIT ASSEMBLY',  spec: 'POLYCARBONATE GLAZING',     pos: [0,0.1,1.1],           sz: [2.0,1.3,2.2] },
-    { name: 'SWASHPLATE',        spec: 'CYCLIC / COLLECTIVE CTL',   pos: [0,1.42,-0.42],        sz: [1.0,0.5,1.0] },
-    { name: 'MAIN ROTOR SYSTEM', spec: '2-BLADE SEMI-RIGID HUB',    pos: [0,1.7,-0.42],         sz: [5.6,0.4,5.6] },
-    { name: 'TAIL BOOM',         spec: 'TAPERED MONOCOQUE TUBE',    pos: [0,-0.08,-2.82],       sz: [0.9,0.7,5.2] },
-    { name: 'TAIL ROTOR',        spec: 'ANTI-TORQUE SYSTEM',        pos: [0.18,0.55,-4.66],     sz: [0.6,1.9,0.6] },
-    { name: 'EXHAUST SYSTEM',    spec: 'IR SUPPRESSOR STACK',       pos: [0.72,0.70,-1.05],     sz: [0.65,0.75,1.0] },
-    { name: 'LANDING GEAR',      spec: 'TUBULAR SKID TYPE',         pos: [0,-0.95,0],           sz: [2.0,0.7,4.0] },
+    { name: 'FUSELAGE',      spec: 'SEMI-MONOCOQUE · LIGHT ALLOY',    pos: [0, 0, -0.1],          sz: [2.2, 1.5, 4.4] },
+    { name: 'POWERPLANT',    spec: 'ALLISON 250-C20J · 420 SHP',      pos: [0, 0.68, -1.1],       sz: [1.6, 0.8, 1.7] },
+    { name: 'MAIN GEARBOX',  spec: 'TWO-STAGE PLANETARY',             pos: [0, 0.85, -0.42],      sz: [1.3, 1.0, 1.3] },
+    { name: 'COCKPIT',       spec: 'DUAL CONTROLS · 5 SEATS',         pos: [0, 0.1, 1.1],         sz: [1.9, 1.3, 2.1] },
+    { name: 'SWASHPLATE',    spec: 'CYCLIC + COLLECTIVE MIXER',       pos: [0, 1.44, -0.42],      sz: [0.9, 0.55, 0.9] },
+    { name: 'MAIN ROTOR',    spec: '2-BLADE TEETERING · Ø 10.2 M',    pos: [0, 1.7, -0.42],       sz: [8.5, 0.5, 8.5] },
+    { name: 'TAIL BOOM',     spec: 'TAPERED MONOCOQUE + DRIVELINE',   pos: [0, 0, -2.9],          sz: [1.9, 0.9, 4.1] },
+    { name: 'TAIL ROTOR',    spec: 'ANTI-TORQUE · 2 BLADE',           pos: [-0.20, 0.55, -4.66],  sz: [0.5, 1.7, 1.7] },
+    { name: 'EXHAUST STACK', spec: 'TURBINE EFFLUX',                  pos: [0.72, 0.70, -1.05],   sz: [0.6, 0.7, 0.9] },
+    { name: 'LANDING SKIDS', spec: 'TUBULAR GEAR + CROSS STRUTS',     pos: [0, -0.68, 0],         sz: [2.0, 0.65, 3.9] },
   ];
 
-  /* ── Parts array (explode + reassemble) ── */
+  /* ── Parts (exploded-view targets are absolute group positions) ── */
   const parts = [
-    { g: gFuse,         home: [0,    0,    0    ], ex: [0,   -0.4,   0  ] },
-    { g: gCockpit,      home: [0,    0,    0    ], ex: [0,    0.8,   3.5] },
-    { g: gDoorL,        home: [0,    0,    0    ], ex: [-4.2, 0.4,   0.5] },
-    { g: gDoorR,        home: [0,    0,    0    ], ex: [ 4.2, 0.4,   0.5] },
-    { g: gCtrl,         home: [0,    0,    0    ], ex: [0,   -2.5,   3.0] },
-    { g: gEngine,       home: [0,    0,    0    ], ex: [0,    2.6,  -4.0] },
-    { g: gTransmission, home: [0,    0,    0    ], ex: [0,    5.8,  -0.4] },
-    { g: gSwashplate,   home: [0,    0,    0    ], ex: [0,    7.5,  -0.4] },
-    { g: gExhaust,      home: [0,    0,    0    ], ex: [3.8,  4.0,  -2.8] },
-    { g: gIntake,       home: [0,    0,    0    ], ex: [-4.0, 3.5,  -2.2] },
-    { g: gMast,         home: [0,    0,    0    ], ex: [0,    3.8,  -0.4] },
-    { g: gRotor,        home: [0,    1.7, -0.42 ], ex: [0,    5.8,  -0.4] },
-    { g: gBoom,         home: [0,    0,    0    ], ex: [0.3, -0.8,  -5.8] },
-    { g: gStringers,    home: [0,    0,    0    ], ex: [-0.6,-0.8,  -6.5] },
-    { g: gFin,          home: [0,    0,    0    ], ex: [1.0,  2.8,  -8.5] },
-    { g: gTRot,         home: [0.18, 0.55,-4.66 ], ex: [2.8,  3.2,  -9.0] },
-    { g: gSkidL,        home: [0,    0,    0    ], ex: [-3.5,-3.0,   0  ] },
-    { g: gSkidR,        home: [0,    0,    0    ], ex: [ 3.5,-3.0,   0  ] },
+    { g: gFuse,         home: [0, 0, 0],            ex: [0, -0.35, 0],      anchor: [0, 0, 0] },
+    { g: gCockpit,      home: [0, 0, 0],            ex: [0, 1.0, 2.9],      anchor: [0, 0.25, 1.4] },
+    { g: gDoorL,        home: [0, 0, 0],            ex: [-3.1, 0.5, 0.7],   anchor: [-0.74, 0, 0.45] },
+    { g: gDoorR,        home: [0, 0, 0],            ex: [3.1, 0.5, 0.7],    anchor: [0.74, 0, 0.45] },
+    { g: gCtrl,         home: [0, 0, 0],            ex: [0, -1.3, 3.3],     anchor: [0, 0.1, 0.9] },
+    { g: gInterior,     home: [0, 0, 0],            ex: [0, -1.9, 1.5],     anchor: [0, -0.1, 0] },
+    { g: gEngine,       home: [0, 0, 0],            ex: [0, 2.1, -3.1],     anchor: [0, 0.7, -1.1] },
+    { g: gTransmission, home: [0, 0, 0],            ex: [0, 1.5, 0],        anchor: [0, 0.85, -0.42] },
+    { g: gMast,         home: [0, 0, 0],            ex: [0, 2.4, 0],        anchor: [0, 1.3, -0.42] },
+    { g: gSwashplate,   home: [0, 0, 0],            ex: [0, 3.2, 0],        anchor: [0, 1.5, -0.42] },
+    { g: gRotor,        home: [0, 1.7, -0.42],      ex: [0, 5.5, -0.42],    anchor: [0, 0, 0] },
+    { g: gExhaust,      home: [0, 0, 0],            ex: [2.8, 2.6, -2.1],   anchor: [0.72, 0.7, -1.05] },
+    { g: gIntake,       home: [0, 0, 0],            ex: [-2.9, 2.4, -1.6],  anchor: [-0.8, 0.56, -0.72] },
+    { g: gBoom,         home: [0, 0, 0],            ex: [0.1, -0.6, -3.9],  anchor: [0, -0.05, -2.9] },
+    { g: gFin,          home: [0, 0, 0],            ex: [0.7, 1.6, -6.4],   anchor: [0, 0.4, -4.7] },
+    { g: gTRot,         home: [-0.20, 0.55, -4.66], ex: [-2.3, 2.1, -6.8],  anchor: [0, 0, 0] },
+    { g: gSkidL,        home: [0, 0, 0],            ex: [-2.3, -2.1, 0],    anchor: [-0.76, -0.8, -0.15] },
+    { g: gSkidR,        home: [0, 0, 0],            ex: [2.3, -2.1, 0],     anchor: [0.76, -0.8, -0.15] },
   ];
+  const compEl = document.getElementById('hud-comp');
+  if (compEl) compEl.textContent = parts.length;
 
-  /* ── GSAP ScrollTrigger timeline ── */
+  /* Dashed leader lines: exploded part → home station (technical-drawing style) */
+  const leaders = new THREE.Group(); heli.add(leaders);
+  parts.forEach(p => {
+    if (p.g === gFuse) return;
+    const hx = p.home[0] + p.anchor[0], hy = p.home[1] + p.anchor[1], hz = p.home[2] + p.anchor[2];
+    const dx = p.ex[0] - p.home[0], dy = p.ex[1] - p.home[1], dz = p.ex[2] - p.home[2];
+    leaders.add(dashed([[hx, hy, hz], [hx + dx, hy + dy, hz + dz]], mLeader));
+  });
+
+  /* ── GSAP ScrollTrigger timeline (≈15.35 units, scrub 3 for a
+        calm, trailing camera — previously scrub 1.5) ── */
   const scrollState = { p: 0 };
   const wfZone = document.getElementById('wireframe-zone');
 
@@ -1191,7 +1384,7 @@ gsap.registerPlugin(ScrollTrigger);
       trigger: wfZone,
       start: 'top top',
       end: 'bottom bottom',
-      scrub: 1.5,
+      scrub: 3,
       onUpdate(self) {
         scrollState.p = self.progress;
         const pct = Math.round(self.progress * 100);
@@ -1208,48 +1401,42 @@ gsap.registerPlugin(ScrollTrigger);
     }
   });
 
-  /* Phase 0–13% · Hero — subtle tilt */
-  tl.to(heli.rotation, { y: 0.5, duration: 1.3, ease: 'none' }, 0);
+  /* Phase 0–13% · Hero — slow azimuth drift */
+  tl.to(rig, { theta: 0.84, radius: 12.4, duration: 2.0, ease: 'none' }, 0);
 
-  /* Phase 13–40% · Orbit — camera circles the helicopter */
-  tl.to(camera.position, { x: 2,   y: 5.8,  z: 13,  duration: 1.0, ease: 'power2.inOut' }, 1.3);
-  tl.to(lookTarget,       { x: 0,   y: 0.5,  z: 0,   duration: 1.0, ease: 'power2.inOut' }, 1.3);
+  /* Phase 13–40% · Systems check — one continuous 240° orbit */
+  tl.to(rig, { theta: 5.05, duration: 4.0, ease: 'none' }, 2.0);
+  tl.to(rig, { radius: 10.6, duration: 4.0, ease: 'sine.inOut' }, 2.0);
+  tl.to(rig, { phi: 0.46, duration: 2.0, ease: 'sine.inOut' }, 2.0);
+  tl.to(rig, { phi: 0.22, duration: 2.0, ease: 'sine.inOut' }, 4.0);
+  tl.to(look, { y: 0.5, duration: 1.5, ease: 'sine.inOut' }, 2.0);
+  tl.to([mAnnot, mAnnotDash], { opacity: 0.5, duration: 0.7 }, 2.2);
+  tl.to([mAnnot, mAnnotDash], { opacity: 0, duration: 0.6 }, 5.4);
 
-  tl.to(camera.position, { x: -10, y: 4.8,  z: 3,   duration: 1.2, ease: 'power2.inOut' }, 2.3);
-  tl.to(lookTarget,       { x: 0,   y: 0.2,  z: -1,  duration: 1.2, ease: 'power2.inOut' }, 2.3);
+  /* Phase 40–62% · Cockpit — long, gentle dolly through the nose quarter */
+  tl.to(rig, { theta: 5.95, radius: 3.95, phi: 0.07, duration: 3.3, ease: 'power2.inOut' }, 6.0);
+  tl.to(look, { x: 0, y: 0.12, z: 0.85, duration: 3.3, ease: 'power2.inOut' }, 6.0);
 
-  tl.to(camera.position, { x: -6,  y: 4.0,  z: -9,  duration: 1.0, ease: 'power2.inOut' }, 3.5);
+  /* Phase 62–66% · Pull back to service distance */
+  tl.to(rig, { theta: 6.28, radius: 15.8, phi: 0.40, duration: 0.9, ease: 'power2.inOut' }, 9.3);
+  tl.to(look, { y: 0.85, z: -1.3, duration: 0.9, ease: 'power2.inOut' }, 9.3);
 
-  tl.to(camera.position, { x: 6,   y: 3.8,  z: 8,   duration: 1.0, ease: 'power2.inOut' }, 4.5);
-  tl.to(lookTarget,       { x: 0,   y: 0.3,  z: -1,  duration: 1.0, ease: 'power2.inOut' }, 4.5);
-
-  /* Annotation lines fade in during orbit */
-  tl.to(mAnnot, { opacity: 0.45, duration: 0.8 }, 1.8);
-  /* Annotation lines fade out after orbit */
-  tl.to(mAnnot, { opacity: 0, duration: 0.8 }, 5.2);
-
-  /* Phase 40–62% · Cockpit zoom */
-  tl.to(camera.position, { x: 1.8, y: 0.8,  z: 3.6, duration: 3.2, ease: 'power3.inOut' }, 5.5);
-  tl.to(lookTarget,       { x: 0,   y: 0.1,  z: 0.8, duration: 3.2, ease: 'power3.inOut' }, 5.5);
-  tl.to(heli.rotation,    { y: 0.6, duration: 3.2,   ease: 'power2.inOut' }, 5.5);
-
-  /* Phase 62–65% · Pull back for explode */
-  tl.to(camera.position, { x: 10,  y: 5.5,  z: 14,  duration: 0.6, ease: 'power3.inOut' }, 8.7);
-  tl.to(lookTarget,       { x: 0,   y: 1.0,  z: -2,  duration: 0.6, ease: 'power3.inOut' }, 8.7);
-  tl.to(heli.rotation,    { y: 0.9, duration: 0.6 }, 8.7);
-
-  /* Phase 65–83% · Explode */
+  /* Phase 66–84% · Exploded view — ordered separation + leader lines */
+  tl.to(mLeader, { opacity: 0.32, duration: 0.8 }, 10.3);
   parts.forEach((p, i) => {
-    tl.to(p.g.position, { x: p.ex[0], y: p.ex[1], z: p.ex[2], duration: 2.4, ease: 'power3.out' }, 9.2 + i * 0.13);
+    tl.to(p.g.position, { x: p.ex[0], y: p.ex[1], z: p.ex[2], duration: 1.8, ease: 'power2.out' }, 10.0 + i * 0.06);
   });
+  tl.to(rig, { theta: 6.60, radius: 15.6, duration: 2.9, ease: 'none' }, 10.0);
 
-  /* Phase 83–100% · Reassemble */
+  /* Phase 84–100% · Reassembly — settle back near the hero angle */
+  tl.to(mLeader, { opacity: 0, duration: 1.2 }, 13.3);
   parts.forEach((p, i) => {
-    tl.to(p.g.position, { x: p.home[0], y: p.home[1], z: p.home[2], duration: 1.8, ease: 'power3.inOut' }, 12.0 + i * 0.09);
+    tl.to(p.g.position, { x: p.home[0], y: p.home[1], z: p.home[2], duration: 1.5, ease: 'power2.inOut' }, 12.9 + i * 0.055);
   });
-  tl.to(heli.rotation, { y: 1.8, duration: 0.8, ease: 'power1.inOut' }, 14.0);
+  tl.to(rig, { theta: 6.94, radius: 11.8, phi: 0.30, duration: 2.45, ease: 'sine.inOut' }, 12.9);
+  tl.to(look, { x: 0, y: 0.4, z: -0.8, duration: 2.45, ease: 'sine.inOut' }, 12.9);
 
-  /* Canvas crossfade */
+  /* Canvas crossfade as the wireframe zone ends */
   gsap.to('#bg-canvas', {
     opacity: 0,
     scrollTrigger: { trigger: wfZone, start: 'bottom 60%', end: 'bottom top', scrub: 1 }
@@ -1258,88 +1445,112 @@ gsap.registerPlugin(ScrollTrigger);
     opacity: 0.55,
     scrollTrigger: { trigger: wfZone, start: 'bottom 60%', end: 'bottom top', scrub: 1 }
   });
-
-  /* Fade HUD out as zone ends */
-  gsap.to(['#hud-tl','#hud-br','.hud-corners'], {
+  gsap.to(['#hud-tl', '#hud-br', '.hud-corners'], {
     opacity: 0,
     scrollTrigger: { trigger: wfZone, start: 'bottom 80%', end: 'bottom top', scrub: 1 }
   });
 
-  /* ── Load-time reveal: scan line sweep ── */
-  const scanMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.55, fog: false });
-  const scanMesh = new THREE.Mesh(new THREE.BoxGeometry(16, 0.025, 16), scanMat);
+  /* ── Load-time reveal: scan sweep + materialize from black ── */
+  const scanMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.45, fog: false });
+  const scanMesh = new THREE.Mesh(new THREE.BoxGeometry(18, 0.02, 18), scanMat);
   scanMesh.position.y = -3;
   scene.add(scanMesh);
-  gsap.to(scanMesh.position, { y: 3.8, duration: 1.9, ease: 'power2.inOut', delay: 0.7 });
-  gsap.to(scanMat, { opacity: 0, duration: 0.4, delay: 2.4, onComplete: () => scene.remove(scanMesh) });
+  gsap.to(scanMesh.position, { y: 3.8, duration: 2.2, ease: 'power2.inOut', delay: 0.7 });
+  gsap.to(scanMat, { opacity: 0, duration: 0.5, delay: 2.7, onComplete: () => scene.remove(scanMesh) });
 
-  /* Materialize helicopter from black on load */
-  gsap.to(mMain.color,   { r: 0,     g: 0.898, b: 1.0,   duration: 1.8, ease: 'power2.inOut', delay: 0.7 });
-  gsap.to(mDim.color,    { r: 0,     g: 0.267, b: 0.333, duration: 1.8, ease: 'power2.inOut', delay: 1.0 });
-  gsap.to(mBright.color, { r: 0.502, g: 1.0,   b: 1.0,   duration: 1.8, ease: 'power2.inOut', delay: 1.2 });
-  gsap.to(mCtrl.color,   { r: 0,     g: 1.0,   b: 0.8,   duration: 1.8, ease: 'power2.inOut', delay: 1.3 });
-  /* Grid fades in after reveal */
-  gsap.to(gridMats,      { opacity: 1, duration: 1.4, delay: 2.2 });
+  gsap.to(mMain.color,   { r: 0,     g: 0.812, b: 0.910, duration: 2.0, ease: 'power2.inOut', delay: 0.7 });
+  gsap.to(mDim.color,    { r: 0.051, g: 0.271, b: 0.341, duration: 2.0, ease: 'power2.inOut', delay: 1.0 });
+  gsap.to(mBright.color, { r: 0.525, g: 0.949, b: 1.0,   duration: 2.0, ease: 'power2.inOut', delay: 1.2 });
+  gsap.to(mCtrl.color,   { r: 0,     g: 0.898, b: 0.753, duration: 2.0, ease: 'power2.inOut', delay: 1.3 });
+  gsap.to(gridMats, { opacity: 0.8, duration: 1.6, delay: 2.0 });
+  gsap.to(mPad,     { opacity: 0.5, duration: 1.8, delay: 2.3 });
 
   /* ── Render loop ── */
   const clock = new THREE.Clock();
-  let trAngle = 0, rpmDisplay = 0, lastHighlightIdx = -1;
+  let rotorSpd = 0, bobAmt = 1, rpmDisplay = 0, lastHighlightIdx = -1;
 
   (function animate() {
     requestAnimationFrame(animate);
-    const dt = clock.getDelta();
-    const t  = clock.getElapsedTime();
-    const p  = scrollState.p;
+    const dt = Math.min(clock.getDelta(), 0.05);
+    const t = clock.getElapsedTime();
+    const p = scrollState.p;
+    const intro = Math.max(0, Math.min(1, (t - 1.2) / 1.6));
 
-    /* Rotor animations */
-    trAngle += dt * 18;
-    gTRot.rotation.x = trAngle;
-    const rspd = p < 0.08 ? 0.8 : p < 0.50 ? 0.4 : 0.12;
-    gRotor.rotation.y += dt * rspd;
+    /* Rotor spool — smoothed toward per-phase target (slow, stately;
+       spins down for the deconstruct, back up for assembly) */
+    const target = REDUCED ? 0.1
+      : p < 0.13 ? 0.9 : p < 0.40 ? 0.42 : p < 0.62 ? 0.32 : p < 0.85 ? 0.05 : 0.95;
+    rotorSpd += (target - rotorSpd) * Math.min(1, dt * 1.4);
+    gRotor.rotation.y += dt * rotorSpd;
+    gTRot.rotation.x += dt * rotorSpd * 4.6;
 
-    /* Subtle hover in hero */
-    if (p < 0.08) heli.rotation.x = Math.sin(t * 0.4) * 0.015;
+    /* Blur discs read rotor speed */
+    const dop = Math.max(0, Math.min(1, (rotorSpd - 0.3) / 0.65)) * intro;
+    discMat.opacity = dop * 0.10;
+    discFillMat.opacity = dop * 0.03;
+    tDiscMat.opacity = dop * 0.08;
 
-    /* Control pulse during cockpit zoom */
-    if (p > 0.40 && p < 0.65) {
-      const pulse = 0.55 + 0.45 * Math.sin(t * 3.5);
-      mCtrl.color.setRGB(pulse * 0.1, 1.0, 0.85 + pulse * 0.15);
-    } else if (p < 0.40) {
-      mCtrl.color.setRGB(0, 1.0, 0.8);
+    /* Gentle hover bob in hero, damped out after */
+    const bobTarget = (p < 0.10 && !REDUCED) ? 1 : 0;
+    bobAmt += (bobTarget - bobAmt) * Math.min(1, dt * 2);
+    heli.position.y = -0.3 + Math.sin(t * 0.5) * 0.025 * bobAmt;
+    heli.rotation.x = Math.sin(t * 0.4) * 0.012 * bobAmt;
+
+    /* Navigation lights: steady nav, slow beacon flash */
+    for (let i = 0; i < lights.length; i++) {
+      const L = lights[i];
+      L.m.opacity = intro * (L.kind === 'beacon'
+        ? 0.15 + 0.8 * Math.pow(Math.max(0, Math.sin(t * 2.2)), 6)
+        : 0.5 + 0.1 * Math.sin(t * 1.3 + i));
     }
 
-    /* Systems check: selector box + HUD labels */
+    /* Cockpit instrument glow during cockpit phase */
+    if (p > 0.40 && p < 0.65) {
+      const pulse = 0.5 + 0.5 * Math.sin(t * 1.8);
+      mCtrl.color.setRGB(0.06 * pulse, 0.898, 0.70 + 0.18 * pulse);
+    } else if (t > 3.4) {
+      mCtrl.color.setRGB(0, 0.898, 0.753);
+    }
+
     updateHighlight(p, t);
+    updateHudReadout(p);
 
-    /* HUD readout update */
-    updateHudReadout(p, t);
-
-    camera.lookAt(new THREE.Vector3(lookTarget.x, lookTarget.y, lookTarget.z));
+    /* Camera from spherical rig + slow idle breathing */
+    const breathe = REDUCED ? 0 : Math.sin(t * 0.3) * 0.05 * (0.3 + 0.7 * bobAmt);
+    const r = rig.radius + breathe;
+    const cp = Math.cos(rig.phi), sp = Math.sin(rig.phi);
+    camera.position.set(
+      look.x + Math.sin(rig.theta) * cp * r,
+      look.y + sp * r,
+      look.z + Math.cos(rig.theta) * cp * r
+    );
+    lookV.set(look.x, look.y, look.z);
+    camera.lookAt(lookV);
     renderer.render(scene, camera);
   })();
 
   function updateHighlight(p, t) {
-    const oStart = 0.13, oEnd = 0.40;
+    const oStart = 0.135, oEnd = 0.395;
     const partLabel = document.getElementById('hud-part-label');
-    const readout   = document.getElementById('hud-readout');
+    const readout = document.getElementById('hud-readout');
 
     if (p < oStart || p > oEnd) {
       selMat.opacity = 0;
       if (partLabel) partLabel.classList.remove('active');
-      if (readout)   readout.classList.remove('active');
+      if (readout) readout.classList.remove('active');
       return;
     }
 
     const relP = Math.min((p - oStart) / (oEnd - oStart), 0.999);
-    const idx  = Math.floor(relP * highlightDefs.length);
-    const def  = highlightDefs[idx];
+    const idx = Math.floor(relP * highlightDefs.length);
+    const def = highlightDefs[idx];
 
     gSel.position.set(def.pos[0], def.pos[1], def.pos[2]);
     selBox.scale.set(def.sz[0], def.sz[1], def.sz[2]);
-    selMat.opacity = 0.32 + 0.22 * Math.sin(t * 5.5);
+    selMat.opacity = 0.26 + 0.12 * Math.sin(t * 2.4);
 
     if (partLabel) partLabel.classList.add('active');
-    if (readout)   readout.classList.add('active');
+    if (readout) readout.classList.add('active');
 
     if (idx !== lastHighlightIdx) {
       lastHighlightIdx = idx;
@@ -1350,17 +1561,16 @@ gsap.registerPlugin(ScrollTrigger);
     }
   }
 
-  function updateHudReadout(p, t) {
+  function updateHudReadout(p) {
     const rpmEl = document.getElementById('hud-rpm');
-    const sysEl = document.getElementById('hud-sys');
-    const seqEl = document.getElementById('hud-seq');
     if (!rpmEl) return;
+    /* Displayed RPM tracks the visual rotor: 394 = 100% NR on a 206 */
+    rpmDisplay += (Math.min(394, 438 * rotorSpd) - rpmDisplay) * 0.05;
+    rpmEl.textContent = rpmDisplay > 30 ? Math.round(rpmDisplay) : '—';
 
-    const targetRpm = p < 0.13 ? 0 : p < 0.40 ? 2800 : p < 0.62 ? 3200 : p < 0.85 ? 800 : 3000;
-    rpmDisplay += (targetRpm - rpmDisplay) * 0.04;
-    rpmEl.textContent = rpmDisplay > 60 ? Math.round(rpmDisplay) : '—';
-
-    if (sysEl) sysEl.textContent = (p > 0.13 && p < 0.85) ? 'ACTIVE' : 'STANDBY';
+    const sysEl = document.getElementById('hud-sys');
+    if (sysEl) sysEl.textContent = (p >= 0.62 && p < 0.85) ? 'MAINT' : (p > 0.02 ? 'ACTIVE' : 'STANDBY');
+    const seqEl = document.getElementById('hud-seq');
     if (seqEl) {
       const seqs = ['OVERVIEW', 'SYS CHECK', 'COCKPIT', 'DECONSTRUCT', 'ASSEMBLY'];
       const si = p < 0.13 ? 0 : p < 0.40 ? 1 : p < 0.62 ? 2 : p < 0.85 ? 3 : 4;
@@ -1369,7 +1579,6 @@ gsap.registerPlugin(ScrollTrigger);
   }
 
 })();
-
 /* ══════════════════════════════════════════════════════════════
    PORTFOLIO JS — cursor, nav, flow field, observers, counters
 ══════════════════════════════════════════════════════════════ */

@@ -1,86 +1,91 @@
-/* ── Layout ── */
+/* ── Scroll container ── */
 .hs-container {
-  height: 280vh;
+  height: 600vh;
   position: relative;
 }
 
+/* ── Sticky viewport ── */
 .hs-sticky {
   position: sticky;
   top: 0;
   height: 100vh;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-/* ── Blueprint grid background ── */
-:root {
-  --grid-major: rgba(170, 59, 255, 0.13);
-  --grid-minor: rgba(170, 59, 255, 0.055);
-  --grid-dot:   rgba(170, 59, 255, 0.28);
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --grid-major: rgba(192, 132, 252, 0.14);
-    --grid-minor: rgba(192, 132, 252, 0.06);
-    --grid-dot:   rgba(192, 132, 252, 0.30);
-  }
-}
-
-.hs-grid {
+/* ── Background (black → parchment, driven by GSAP) ── */
+.hs-bg {
   position: absolute;
   inset: 0;
-  background-image:
-    linear-gradient(var(--grid-major) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
-    linear-gradient(var(--grid-minor) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px),
-    radial-gradient(circle, var(--grid-dot) 1px, transparent 1px);
-  background-size:
-    100px 100px,
-    100px 100px,
-    20px 20px,
-    20px 20px,
-    20px 20px;
-  pointer-events: none;
+  background-color: #000;
+  z-index: 0;
 }
 
-/* ── SVG canvas ── */
-.hs-svg {
+/* ── Image layer base ── */
+.hs-layer {
   position: absolute;
   inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* Layers that start invisible (GSAP fades them in) */
+.hs-fade-layer {
+  opacity: 0;
+}
+
+/* Blueprint starts clipped off-screen to the right */
+.hs-blueprint-layer {
+  clip-path: inset(0 100% 0 0);
+  z-index: 2;
+}
+
+/* ── Wide orbital image — zoom driven by GSAP via transform-origin ── */
+.hs-img-wide {
   width: 100%;
   height: 100%;
+  object-fit: cover;
+  display: block;
+  /* Satellite sits at ~70% from left, ~32% from top */
+  transform-origin: 70% 32%;
+  will-change: transform, opacity;
 }
 
-/* ── Helicopter scaleX group ── */
-.heli-transform {
-  transform-box: fill-box;
-  transform-origin: center;
+/* ── Close-up & sketch — full-cover ── */
+.hs-img-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-/* ── Gear inner rotation group ── */
-.gear-rot {
-  transform-box: fill-box;
-  transform-origin: center;
+/* ── Blueprint / sketch — letterboxed inside parchment bg ── */
+.hs-img-contain {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
-/* ── Rotor auto-spin animations ── */
-@keyframes hs-spin {
-  to { transform: rotate(360deg); }
-}
-
-.hs-rotor {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: hs-spin 2.8s linear infinite;
-}
-
-.hs-tail-rotor {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: hs-spin 1.1s linear infinite;
+/* ── Pencil / drawing-line effect ── */
+.hs-pencil-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 245, 190, 0) 0%,
+    rgba(255, 245, 190, 0.95) 15%,
+    rgba(255, 245, 190, 0.95) 85%,
+    rgba(255, 245, 190, 0) 100%
+  );
+  box-shadow:
+    0 0 10px 3px rgba(255, 240, 160, 0.55),
+    0 0 24px 8px rgba(255, 235, 130, 0.25);
+  opacity: 0;
+  z-index: 4;
+  pointer-events: none;
 }
 
 /* ── Text overlay ── */
@@ -170,6 +175,7 @@
   text-transform: uppercase;
   opacity: 0.65;
   pointer-events: none;
+  z-index: 10;
 }
 
 .hs-chevron {
@@ -182,6 +188,6 @@
 }
 
 @keyframes hs-bounce {
-  0%, 100% { transform: rotate(45deg) translateY(0);   }
+  0%, 100% { transform: rotate(45deg) translateY(0); }
   50%       { transform: rotate(45deg) translateY(5px); }
 }
