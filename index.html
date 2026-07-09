@@ -887,7 +887,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 /* ══════════════════════════════════════════════════════════════
    THREE.JS — Bell 206B JetRanger III wireframe background
-   Lofted airframe · slow continuous camera rig · exploded view
+   Lofted airframe · live drivetrain + control linkage · exploded view
 ══════════════════════════════════════════════════════════════ */
 (function() {
   const canvas = document.getElementById('bg-canvas');
@@ -1076,13 +1076,14 @@ gsap.registerPlugin(ScrollTrigger);
   gCockpit.add(polyline([[-0.42, 0.56, 0.72], [-0.14, 0.58, 0.78], [-0.14, 0.56, 1.02], [-0.40, 0.52, 0.94]], mDim, true));
   gCockpit.add(polyline([[ 0.42, 0.56, 0.72], [ 0.14, 0.58, 0.78], [ 0.14, 0.56, 1.02], [ 0.40, 0.52, 0.94]], mDim, true));
 
-  /* ── 3/4. Crew doors — frame, window, handle ── */
+  /* ── 3/4. Crew doors — hinged at the forward doorpost so they can
+        swing open for the cockpit inspection ── */
   function doorPanel(sx) {
     const g = new THREE.Group();
-    const x = sx * 0.735;
-    g.add(polyline([[x, 0.44, 0.86], [x, 0.44, 0.02], [x, -0.42, -0.02], [x, -0.44, 0.80], [x, 0.10, 0.92]], mMain, true));
-    g.add(polyline([[x, 0.34, 0.80], [x, 0.34, 0.14], [x, 0.02, 0.12], [x, 0.04, 0.78]], mDim, true));
-    g.add(polyline([[x, -0.06, 0.30], [x, -0.06, 0.14]], mBright));
+    g.position.set(sx * 0.735, 0, 0.89);
+    g.add(polyline([[0, 0.44, -0.03], [0, 0.44, -0.87], [0, -0.42, -0.91], [0, -0.44, -0.09], [0, 0.10, 0.03]], mMain, true));
+    g.add(polyline([[0, 0.34, -0.09], [0, 0.34, -0.75], [0, 0.02, -0.77], [0, 0.04, -0.11]], mDim, true));
+    g.add(polyline([[0, -0.06, -0.59], [0, -0.06, -0.75]], mBright));
     return g;
   }
   const gDoorL = doorPanel(-1); heli.add(gDoorL);
@@ -1093,18 +1094,38 @@ gsap.registerPlugin(ScrollTrigger);
   place(gCtrl, box(1.24, 0.60, 0.06, mBright), 0, 0.16, 0.92);   // panel
   place(gCtrl, box(1.16, 0.05, 0.22, mDim), 0, 0.48, 0.84);      // glareshield
   place(gCtrl, box(0.30, 0.42, 0.05, mDim), 0.16, 0.12, 0.955);  // radio stack
-  // Gauge dials, two rows of three (pilot side)
+  // Gauge dials with live needles, two rows of three (pilot side)
+  const needles = [];
   [-0.44, -0.31, -0.18].forEach(gx => {
     [0.315, 0.175].forEach(gy => {
       gCtrl.add(circleLine(0.048, 18, mCtrl, (u, v) => new THREE.Vector3(gx + u, gy + v, 0.952)));
+      const nd = new THREE.Group();
+      nd.position.set(gx, gy, 0.956);
+      nd.add(polyline([[0, 0.007, 0], [0, 0.041, 0]], mCtrl));
+      gCtrl.add(nd);
+      const k = needles.length;
+      needles.push({ g: nd, kind: k === 0 ? 'nr' : k === 1 ? 'trq' : 'misc', off: k * 2.1, rate: 0.5 + 0.21 * k, base: (k % 2 ? -1 : 1) * 0.26 });
     });
   });
   place(gCtrl, box(0.34, 0.50, 0.40, mDim), 0, -0.28, 0.55);     // center pedestal
-  place(gCtrl, edges(new THREE.CylinderGeometry(0.016, 0.022, 0.46, 5), mCtrl), -0.30, -0.10, 0.42, 0.16, 0, 0);
-  place(gCtrl, edges(new THREE.CylinderGeometry(0.016, 0.022, 0.46, 5), mCtrl),  0.30, -0.10, 0.42, 0.16, 0, 0);
-  place(gCtrl, edges(new THREE.CylinderGeometry(0.014, 0.014, 0.52, 5), mCtrl), -0.58, -0.16, 0.20, 0, 0, -0.42);
-  place(gCtrl, box(0.08, 0.12, 0.03, mDim), -0.40, -0.34, 0.98); // pedals
-  place(gCtrl, box(0.08, 0.12, 0.03, mDim), -0.20, -0.34, 0.98);
+  // Dual cyclic sticks on base pivots — they echo the swashplate input
+  function cyclicStick(px) {
+    const pv = new THREE.Group();
+    pv.position.set(px, -0.33, 0.38);
+    pv.rotation.x = 0.16;
+    place(pv, edges(new THREE.CylinderGeometry(0.016, 0.022, 0.46, 5), mCtrl), 0, 0.23, 0);
+    gCtrl.add(pv);
+    return pv;
+  }
+  const cyclics = [cyclicStick(-0.30), cyclicStick(0.30)];
+  // Collective lever on its own pivot — eases up as the rotor spools
+  const collective = new THREE.Group();
+  collective.position.set(-0.69, -0.40, 0.20);
+  collective.rotation.z = -0.42;
+  place(collective, edges(new THREE.CylinderGeometry(0.014, 0.014, 0.52, 5), mCtrl), 0, 0.26, 0);
+  gCtrl.add(collective);
+  const pedalL = place(gCtrl, box(0.08, 0.12, 0.03, mDim), -0.40, -0.34, 0.98); // anti-torque pedals
+  const pedalR = place(gCtrl, box(0.08, 0.12, 0.03, mDim), -0.20, -0.34, 0.98);
 
   /* ── 6. Cabin interior — crew seats + passenger bench ── */
   const gInterior = new THREE.Group(); heli.add(gInterior);
@@ -1125,10 +1146,24 @@ gsap.registerPlugin(ScrollTrigger);
     { z: -1.80, w: 0.52, h: 0.22, y: 0.58, e: 2.1 },
   ]));
   for (let i = 0; i < 4; i++) place(gEngine, box(0.56, 0.03, 0.03, mDim), 0, 0.44 + i * 0.09, -1.86);
-  // Turbine spool + compressor / power-turbine discs
+  // Turbine spool — compressor / power-turbine discs spin on a live shaft
   place(gEngine, cyl(0.10, 0.13, 0.55, 8, mDim), 0, 0.72, -0.95, Math.PI / 2, 0, 0);
-  place(gEngine, edges(new THREE.CylinderGeometry(0.15, 0.15, 0.04, 10), mDim), 0, 0.72, -1.25, Math.PI / 2, 0, 0);
-  place(gEngine, edges(new THREE.CylinderGeometry(0.13, 0.13, 0.04, 10), mDim), 0, 0.72, -0.62, Math.PI / 2, 0, 0);
+  const spoolMount = new THREE.Group();
+  spoolMount.position.set(0, 0.72, -0.95);
+  spoolMount.rotation.x = Math.PI / 2;
+  gEngine.add(spoolMount);
+  const spoolSpin = new THREE.Group();
+  spoolMount.add(spoolSpin);
+  spoolSpin.add(cyl(0.034, 0.034, 0.78, 6, mDim));
+  [[-0.30, 0.15], [0.33, 0.13]].forEach(d => {
+    place(spoolSpin, edges(new THREE.CylinderGeometry(d[1], d[1], 0.04, 10), mDim), 0, d[0], 0);
+    const spokes = [];
+    for (let i = 0; i < 8; i++) {
+      const a = i / 8 * Math.PI * 2;
+      spokes.push([[Math.cos(a) * 0.045, d[0], Math.sin(a) * 0.045], [Math.cos(a) * (d[1] - 0.01), d[0], Math.sin(a) * (d[1] - 0.01)]]);
+    }
+    spoolSpin.add(segments(spokes, mDim));
+  });
 
   /* ── 8. Main transmission ── */
   const gTransmission = new THREE.Group(); heli.add(gTransmission);
@@ -1145,7 +1180,10 @@ gsap.registerPlugin(ScrollTrigger);
 
   /* ── 9. Rotor mast ── */
   const gMast = new THREE.Group(); heli.add(gMast);
-  place(gMast, cyl(0.07, 0.09, 0.82, 8), 0, 1.25, -0.42);
+  const mastSpin = new THREE.Group();          // mast tube turns with the rotor
+  mastSpin.position.set(0, 1.25, -0.42);
+  mastSpin.add(cyl(0.07, 0.09, 0.82, 8));
+  gMast.add(mastSpin);
   place(gMast, cyl(0.22, 0.26, 0.35, 8), 0, 0.96, -0.42);
   place(gMast, edges(new THREE.CylinderGeometry(0.2, 0.2, 0.1, 8), mBright), 0, 1.7, -0.42);
   place(gMast, cyl(0.022, 0.022, 0.28, 5, mDim), 0.3, 1.56, -0.42);
@@ -1153,33 +1191,49 @@ gsap.registerPlugin(ScrollTrigger);
 
   /* ── 10. Swashplate + pitch links ── */
   const gSwashplate = new THREE.Group(); heli.add(gSwashplate);
-  place(gSwashplate, cyl(0.27, 0.27, 0.06, 12, mBright), 0, 1.38, -0.42);
-  place(gSwashplate, cyl(0.21, 0.21, 0.06, 12, mDim), 0, 1.46, -0.42);
-  place(gSwashplate, box(0.035, 0.32, 0.035, mCtrl), 0.20, 1.50, -0.42);
-  [0, Math.PI * 0.5, Math.PI, Math.PI * 1.5].forEach(a => {
-    const px = Math.cos(a) * 0.20;
-    const pz = -0.42 + Math.sin(a) * 0.20;
-    place(gSwashplate, cyl(0.018, 0.018, 0.30, 5, mCtrl), px, 1.58, pz, 0.22, 0, a);
+  /* Tilt frame carries both stars; cyclic input tilts it, collective lifts it */
+  const swashTilt = new THREE.Group();
+  swashTilt.position.set(0, 1.415, -0.42);
+  gSwashplate.add(swashTilt);
+  place(swashTilt, cyl(0.27, 0.27, 0.06, 12, mBright), 0, -0.04, 0);   // stationary star
+  [[0.15, 0.10], [-0.15, 0.10], [0, -0.17]].forEach(o => {             // servo input rods
+    place(swashTilt, cyl(0.014, 0.014, 0.18, 4, mCtrl), o[0], -0.16, o[1]);
   });
-  place(gSwashplate, box(0.035, 0.035, 0.24, mDim), 0, 1.42, -0.24);
+  /* Rotating star + pitch links turn with the mast */
+  const swashSpin = new THREE.Group();
+  swashTilt.add(swashSpin);
+  place(swashSpin, cyl(0.21, 0.21, 0.06, 12, mDim), 0, 0.04, 0);
+  [-1, 1].forEach(sx => {
+    place(swashSpin, cyl(0.018, 0.018, 0.24, 5, mCtrl), sx * 0.21, 0.15, 0, 0, 0, -sx * 0.25);
+  });
+  swashSpin.add(polyline([[0, 0.02, -0.19], [0, 0.12, -0.13], [0, 0.20, -0.16]], mDim)); // drive scissors
 
-  /* ── 11. Main rotor — teetering hub, grips, blade planforms ── */
+  /* ── 11. Main rotor — teetering hub see-saws, blades cone with lift
+        and feather cyclically about their span axis ── */
   const gRotor = new THREE.Group();
   gRotor.position.set(0, 1.7, -0.42);
   heli.add(gRotor);
-  place(gRotor, box(1.16, 0.13, 0.20, mBright), 0, 0, 0);
-  place(gRotor, edges(new THREE.CylinderGeometry(0.17, 0.17, 0.09, 10), mBright), 0, 0, 0);
+  place(gRotor, edges(new THREE.CylinderGeometry(0.028, 0.028, 0.26, 6), mDim), 0, 0, 0, Math.PI / 2, 0, 0); // teeter trunnion
+  const rTeeter = new THREE.Group();
+  gRotor.add(rTeeter);
+  place(rTeeter, box(1.16, 0.13, 0.20, mBright), 0, 0, 0);
+  place(rTeeter, edges(new THREE.CylinderGeometry(0.17, 0.17, 0.09, 10), mBright), 0, 0, 0);
+  const blades = [];
   [-1, 1].forEach(sx => {
-    place(gRotor, cyl(0.055, 0.062, 0.42, 6, mDim), sx * 0.52, 0, 0, 0, 0, Math.PI / 2);
-    place(gRotor, box(0.10, 0.05, 0.30, mCtrl), sx * 0.30, -0.05, sx * 0.12);
+    const b = new THREE.Group();
+    rTeeter.add(b);
+    blades.push(b);
+    place(b, cyl(0.055, 0.062, 0.42, 6, mDim), sx * 0.52, 0, 0, 0, 0, Math.PI / 2);
+    place(b, box(0.10, 0.05, 0.30, mCtrl), sx * 0.30, -0.05, sx * 0.12);
+    b.add(polyline([[sx * 0.30, -0.05, sx * 0.12], [sx * 0.235, -0.015, 0]], mCtrl)); // pitch horn → link
     const c = 0.115;
-    gRotor.add(polyline([
+    b.add(polyline([
       [sx * 0.34, 0, c], [sx * 3.92, 0, c], [sx * 4.08, 0, c * 0.5],
       [sx * 4.08, 0, -c * 0.5], [sx * 3.92, 0, -c], [sx * 0.34, 0, -c]
     ], mMain, true));
-    gRotor.add(polyline([[sx * 0.34, 0, c * 0.35], [sx * 4.08, 0, c * 0.35]], mDim));
-    gRotor.add(segments([1.1, 1.9, 2.7, 3.5].map(rx => [[sx * rx, 0, c], [sx * rx, 0, -c]]), mDim));
-    place(gRotor, box(0.14, 0.06, 0.26, mBright), sx * 4.02, 0, 0);
+    b.add(polyline([[sx * 0.34, 0, c * 0.35], [sx * 4.08, 0, c * 0.35]], mDim));
+    b.add(segments([1.1, 1.9, 2.7, 3.5].map(rx => [[sx * rx, 0, c], [sx * rx, 0, -c]]), mDim));
+    place(b, box(0.14, 0.06, 0.26, mBright), sx * 4.02, 0, 0);
   });
   // Rotor blur disc — opacity tracks rotor speed
   const discMat = new THREE.MeshBasicMaterial({ color: 0x00cfe8, transparent: true, opacity: 0, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
@@ -1227,8 +1281,16 @@ gsap.registerPlugin(ScrollTrigger);
     }
     gBoom.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), mDim));
   });
-  // Tail rotor drive shaft + hanger bearings
-  place(gBoom, cyl(0.024, 0.024, 3.5, 6, mBright), 0, 0.19, -2.75, Math.PI / 2 - 0.04, 0, 0);
+  // Tail rotor drive shaft (live) + hanger bearings
+  const tailShaftMount = new THREE.Group();
+  tailShaftMount.position.set(0, 0.19, -2.75);
+  tailShaftMount.rotation.x = Math.PI / 2 - 0.04;
+  gBoom.add(tailShaftMount);
+  const tailShaftSpin = new THREE.Group();
+  tailShaftMount.add(tailShaftSpin);
+  tailShaftSpin.add(cyl(0.024, 0.024, 3.5, 6, mBright));
+  place(tailShaftSpin, edges(new THREE.CylinderGeometry(0.045, 0.045, 0.04, 6), mDim), 0, 0.75, 0);   // coupling flanges
+  place(tailShaftSpin, edges(new THREE.CylinderGeometry(0.045, 0.045, 0.04, 6), mDim), 0, -0.85, 0);
   [-1.6, -2.4, -3.2, -4.0].forEach(bz => {
     const by = 0.26 + (bz + 1.0) * (0.14 / 3.5);
     gBoom.add(circleLine(0.045, 10, mDim, (u, v) => new THREE.Vector3(u, by + v, bz)));
@@ -1371,8 +1433,8 @@ gsap.registerPlugin(ScrollTrigger);
   const parts = [
     { g: gFuse,         home: [0, 0, 0],            ex: [0, -0.35, 0],      anchor: [0, 0, 0] },
     { g: gCockpit,      home: [0, 0, 0],            ex: [0, 1.0, 2.9],      anchor: [0, 0.25, 1.4] },
-    { g: gDoorL,        home: [0, 0, 0],            ex: [-3.1, 0.5, 0.7],   anchor: [-0.74, 0, 0.45] },
-    { g: gDoorR,        home: [0, 0, 0],            ex: [3.1, 0.5, 0.7],    anchor: [0.74, 0, 0.45] },
+    { g: gDoorL,        home: [-0.735, 0, 0.89],    ex: [-3.835, 0.5, 1.59], anchor: [0, 0, -0.44] },
+    { g: gDoorR,        home: [0.735, 0, 0.89],     ex: [3.835, 0.5, 1.59],  anchor: [0, 0, -0.44] },
     { g: gCtrl,         home: [0, 0, 0],            ex: [0, -1.3, 3.3],     anchor: [0, 0.1, 0.9] },
     { g: gInterior,     home: [0, 0, 0],            ex: [0, -1.9, 1.5],     anchor: [0, -0.1, 0] },
     { g: gEngine,       home: [0, 0, 0],            ex: [0, 2.1, -3.1],     anchor: [0, 0.7, -1.1] },
@@ -1439,9 +1501,14 @@ gsap.registerPlugin(ScrollTrigger);
   tl.to([mAnnot, mAnnotDash], { opacity: 0.5, duration: 0.7 }, 2.2);
   tl.to([mAnnot, mAnnotDash], { opacity: 0, duration: 0.6 }, 5.4);
 
-  /* Phase 40–62% · Cockpit — long, gentle dolly through the nose quarter */
+  /* Phase 40–62% · Cockpit — long, gentle dolly through the nose quarter;
+     crew doors swing open for the inspection, latch before pull-back */
   tl.to(rig, { theta: 5.95, radius: 3.95, phi: 0.07, duration: 3.3, ease: 'power2.inOut' }, 6.0);
   tl.to(look, { x: 0, y: 0.12, z: 0.85, duration: 3.3, ease: 'power2.inOut' }, 6.0);
+  tl.to(gDoorL.rotation, { y: 0.55, duration: 1.6, ease: 'power2.inOut' }, 6.3);
+  tl.to(gDoorR.rotation, { y: -0.34, duration: 1.6, ease: 'power2.inOut' }, 6.55);
+  tl.to(gDoorL.rotation, { y: 0, duration: 0.85, ease: 'power2.inOut' }, 9.3);
+  tl.to(gDoorR.rotation, { y: 0, duration: 0.85, ease: 'power2.inOut' }, 9.3);
 
   /* Phase 62–66% · Pull back to service distance */
   tl.to(rig, { theta: 6.28, radius: 15.8, phi: 0.40, duration: 0.9, ease: 'power2.inOut' }, 9.3);
@@ -1493,7 +1560,7 @@ gsap.registerPlugin(ScrollTrigger);
 
   /* ── Render loop ── */
   const clock = new THREE.Clock();
-  let rotorSpd = 0, bobAmt = 1, rpmDisplay = 0, lastHighlightIdx = -1;
+  let rotorSpd = 0, rotAngle = 0, bobAmt = 1, rpmDisplay = 0, lastHighlightIdx = -1;
 
   (function animate() {
     requestAnimationFrame(animate);
@@ -1507,8 +1574,51 @@ gsap.registerPlugin(ScrollTrigger);
     const target = REDUCED ? 0.1
       : p < 0.13 ? 0.9 : p < 0.40 ? 0.42 : p < 0.62 ? 0.32 : p < 0.85 ? 0.05 : 0.95;
     rotorSpd += (target - rotorSpd) * Math.min(1, dt * 1.4);
-    gRotor.rotation.y += dt * rotorSpd;
+    const spool = Math.min(1, rotorSpd / 0.9);
+
+    /* One shared shaft angle keeps the whole drivetrain in mesh:
+       hub, mast, rotating swashplate star, turbine spool, tail driveline */
+    rotAngle += dt * rotorSpd;
+    gRotor.rotation.y = rotAngle;
+    mastSpin.rotation.y = rotAngle;
+    swashSpin.rotation.y = rotAngle;
     gTRot.rotation.x += dt * rotorSpd * 4.6;
+    spoolSpin.rotation.y -= dt * rotorSpd * 9.0;
+    tailShaftSpin.rotation.y += dt * rotorSpd * 6.0;
+
+    /* Control linkage — cyclic input circles slowly: stick → swashplate
+       tilt → blade feathering (1/rev) → flapping response 90° later */
+    const cyc = REDUCED ? 0 : 0.045 * spool;
+    const cA = t * 0.26;
+    swashTilt.rotation.x = Math.cos(cA) * cyc;
+    swashTilt.rotation.z = Math.sin(cA) * cyc;
+    swashTilt.position.y = 1.415 + 0.035 * spool;            // collective rise
+    const cone = 0.05 * spool;                               // blades cone with lift
+    blades[0].rotation.z = -cone;
+    blades[1].rotation.z =  cone;
+    const feather = cyc * 1.5 * Math.sin(rotAngle + cA);
+    blades[0].rotation.x = feather;
+    blades[1].rotation.x = feather;                          // same sign = opposite pitch
+    rTeeter.rotation.z = (REDUCED ? 0 : 0.022 * spool) * Math.sin(rotAngle + cA - Math.PI / 2);
+    const tipRise = Math.sin(cone) * 3.0;                    // blur disc follows the tip path
+    discRing.position.y = tipRise;
+    discFill.position.y = tipRise;
+    cyclics.forEach(cs => {
+      cs.rotation.x = 0.16 - Math.cos(cA) * cyc * 2.4;
+      cs.rotation.z = -Math.sin(cA) * cyc * 2.0;
+    });
+    collective.rotation.z = -0.42 + 0.16 * spool;
+    pedalL.position.z = 0.98 + (REDUCED ? 0 : 0.020 * Math.sin(t * 0.45) * spool);
+    pedalR.position.z = 0.98 - (REDUCED ? 0 : 0.020 * Math.sin(t * 0.45) * spool);
+
+    /* Gauge needles — NR and torque track the spool, the rest wander */
+    for (let i = 0; i < needles.length; i++) {
+      const nd = needles[i];
+      const a2 = nd.kind === 'nr'  ? 1.85 - 3.5 * spool + (REDUCED ? 0 : 0.03 * Math.sin(t * 9))
+               : nd.kind === 'trq' ? 1.55 - 2.7 * spool + (REDUCED ? 0 : 0.05 * Math.sin(t * 6.3 + 1.7))
+               : nd.base + (REDUCED ? 0 : Math.sin(t * nd.rate + nd.off) * 0.22 * (0.25 + 0.75 * spool));
+      nd.g.rotation.z += (a2 - nd.g.rotation.z) * Math.min(1, dt * 2.5);
+    }
 
     /* Blur discs read rotor speed */
     const dop = Math.max(0, Math.min(1, (rotorSpd - 0.3) / 0.65)) * intro;
@@ -1516,17 +1626,21 @@ gsap.registerPlugin(ScrollTrigger);
     discFillMat.opacity = dop * 0.03;
     tDiscMat.opacity = dop * 0.08;
 
-    /* Gentle hover bob in hero, damped out after */
+    /* Gentle hover bob in hero + faint 2-per-rev airframe tremor */
     const bobTarget = (p < 0.10 && !REDUCED) ? 1 : 0;
     bobAmt += (bobTarget - bobAmt) * Math.min(1, dt * 2);
-    heli.position.y = -0.3 + Math.sin(t * 0.5) * 0.025 * bobAmt;
-    heli.rotation.x = Math.sin(t * 0.4) * 0.012 * bobAmt;
+    const vib = REDUCED ? 0 : rotorSpd * intro;
+    heli.position.y = -0.3 + Math.sin(t * 0.5) * 0.025 * bobAmt + Math.sin(rotAngle * 2) * 0.0045 * vib;
+    heli.rotation.x = Math.sin(t * 0.4) * 0.012 * bobAmt + Math.sin(rotAngle * 2 + 0.7) * 0.0026 * vib;
+    heli.rotation.z = Math.cos(rotAngle * 2) * 0.002 * vib;
 
-    /* Navigation lights: steady nav, slow beacon flash */
+    /* Navigation lights: steady nav, authentic double-flash beacon */
+    const bPh = t % 1.7;
+    const bFl = Math.exp(-Math.pow((bPh - 0.12) / 0.055, 2)) + Math.exp(-Math.pow((bPh - 0.38) / 0.055, 2));
     for (let i = 0; i < lights.length; i++) {
       const L = lights[i];
       L.m.opacity = intro * (L.kind === 'beacon'
-        ? 0.15 + 0.8 * Math.pow(Math.max(0, Math.sin(t * 2.2)), 6)
+        ? 0.12 + 0.88 * Math.min(1, bFl)
         : 0.5 + 0.1 * Math.sin(t * 1.3 + i));
     }
 
