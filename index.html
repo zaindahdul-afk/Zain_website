@@ -393,6 +393,31 @@
     .timeline-card ul { list-style: none; display: flex; flex-direction: column; gap: .65rem; }
     .timeline-card li { font-size: .84rem; color: var(--text2); line-height: 1.7; padding-left: 1.2rem; position: relative; }
     .timeline-card li::before { content: ''; position: absolute; left: 0; top: .62em; width: 5px; height: 1px; background: var(--accent); }
+    .timeline-note { font-family: 'Inter', sans-serif; font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); border: 1px solid var(--border2); border-radius: 980px; padding: .2rem .6rem; vertical-align: middle; margin-left: .6rem; }
+
+    /* ── Projects ── */
+    #projects { padding: 8.5rem 2rem; }
+    .proj-wrapper { max-width: 940px; margin: 0 auto; }
+    .proj-card {
+      border: 1px solid var(--border); border-radius: 4px; padding: 3rem;
+      position: relative; overflow: hidden; background: var(--bg3);
+      opacity: 0; transform: translateY(24px); transition: all .7s var(--ease);
+    }
+    .proj-card.visible { opacity: 1; transform: translateY(0); }
+    .proj-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(to right, transparent, rgba(53,212,226,.45), transparent); }
+    .proj-card:hover { border-color: var(--border2); }
+    .proj-badge { display: inline-block; padding: .3rem .8rem; border: 1px solid var(--border2); color: var(--accent); font-size: .6rem; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 1.3rem; border-radius: 980px; }
+    .proj-title { font-family: 'Cormorant Garamond', serif; font-size: 2.1rem; font-weight: 400; color: var(--white); line-height: 1.15; margin-bottom: .45rem; letter-spacing: -.01em; }
+    .proj-sub { font-size: .78rem; color: var(--accent); margin-bottom: 2rem; }
+    .proj-specs { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 2rem; }
+    .proj-spec { background: var(--bg2); padding: 1.4rem 1.2rem; text-align: center; }
+    .proj-spec-val { font-family: 'Cormorant Garamond', serif; font-size: 1.75rem; font-weight: 400; color: var(--white); line-height: 1; }
+    .proj-spec-val sub { font-size: .5em; color: var(--text3); letter-spacing: .08em; margin-left: .15em; }
+    .proj-spec-label { margin-top: .5rem; font-size: .58rem; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
+    .proj-list { list-style: none; display: flex; flex-direction: column; gap: .8rem; }
+    .proj-list li { font-size: .84rem; color: var(--text2); line-height: 1.75; padding-left: 1.2rem; position: relative; }
+    .proj-list li::before { content: ''; position: absolute; left: 0; top: .62em; width: 5px; height: 1px; background: var(--accent); }
+    .proj-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 2rem; }
 
     /* ── Skills ── */
     #skills { padding: 8.5rem 2rem; }
@@ -424,13 +449,17 @@
 
     /* ── Volunteer ── */
     #volunteer { padding: 8.5rem 2rem; }
-    .vol-wrapper { max-width: 940px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .vol-wrapper { max-width: 940px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
     .vol-card { padding: 2.6rem; border: 1px solid var(--border); position: relative; overflow: hidden; opacity: 0; transform: scale(.97); border-radius: 4px; transition: all .65s var(--ease); }
     .vol-card.visible { opacity: 1; transform: scale(1); }
     .vol-card:hover { border-color: var(--border2); background: var(--bg3); transform: translateY(-3px); }
     .vol-icon { width: 30px; height: 30px; margin-bottom: 1.5rem; color: var(--accent); display: block; }
-    .vol-title { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; font-weight: 400; color: var(--white); margin-bottom: .75rem; }
+    .vol-title { font-family: 'Cormorant Garamond', serif; font-size: 1.45rem; font-weight: 400; color: var(--white); line-height: 1.25; margin-bottom: .45rem; }
+    .vol-meta { font-size: .64rem; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); margin-bottom: 1.1rem; }
     .vol-desc { font-size: .82rem; color: var(--text2); line-height: 1.85; }
+    .interests { margin-top: 4rem; padding-top: 3rem; border-top: 1px solid var(--border); text-align: center; }
+    .interests-label { display: block; font-size: .62rem; letter-spacing: .32em; text-transform: uppercase; color: var(--text3); margin-bottom: 1.4rem; }
+    .interests-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; }
 
     /* ── Contact ── */
     #contact { padding: 9rem 2rem; background: var(--bg2); text-align: center; }
@@ -459,7 +488,9 @@
       nav { padding: 0 1.5rem; }
       .nav-links { display: none; }
       #hero { padding: 7rem 1.5rem 4rem; }
-      #about,#experience,#skills,#education,#volunteer,#contact { padding: 5.5rem 1.5rem; }
+      #about,#experience,#projects,#skills,#education,#volunteer,#contact { padding: 5.5rem 1.5rem; }
+      .proj-card { padding: 2rem 1.5rem; }
+      .proj-specs { grid-template-columns: 1fr; }
       .section-header { margin-bottom: 3.5rem; }
       .about-grid { grid-template-columns: 1fr; gap: 3rem; }
       .skills-grid { grid-template-columns: 1fr 1fr; }
@@ -524,6 +555,7 @@
   <ul class="nav-links">
     <li><a href="#about">About</a></li>
     <li><a href="#experience">Experience</a></li>
+    <li><a href="#projects">Projects</a></li>
     <li><a href="#skills">Skills</a></li>
     <li><a href="#education">Education</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -539,9 +571,8 @@
       <p class="hero-eyebrow">Mechanical Engineering &nbsp;·&nbsp; University of California, Berkeley</p>
       <h1 class="hero-name">Zain Dahdul</h1>
       <p class="hero-tagline">
-        Engineering precision meets real-world action —
-        <strong>design</strong>, <strong>response</strong>, and
-        <strong>relentless drive</strong>.
+        Mechanical design, shipped software, and split-second response —
+        I build things that have to work <strong>the first time</strong>.
       </p>
       <div class="hero-ctas">
         <a href="#about" class="btn-primary">View My Work</a>
@@ -557,15 +588,15 @@
   <!-- S2 · Systems orbit (200vh) — camera orbits, parts highlighted -->
   <section class="wf-section align-right" id="wf-orbit" style="min-height:200vh;">
     <div class="wf-card reveal">
-      <div class="wf-card-eyebrow">Education</div>
+      <div class="wf-card-eyebrow">Education · Expected May 2029</div>
       <div class="wf-card-name">Zain Dahdul</div>
       <div class="wf-card-sub">B.S. Mechanical Engineering · UC Berkeley</div>
       <div class="wf-divider"></div>
       <ul class="wf-card-lines">
-        <li>3.7 GPA</li>
-        <li>Relevant Courses: Multivariable Calculus, Physics, Engineering 3D Model and Design, Python for Engineers</li>
-        <li>Phi Kappa Psi</li>
-        <li>Professional Development: Wind Turbine</li>
+        <li>College of Engineering · 3.5 GPA</li>
+        <li>Coursework: Solid Mechanics, 3D CAD &amp; Prototyping, Programming &amp; Data Analysis for Engineers, Linear Algebra &amp; Differential Equations</li>
+        <li>Cal Men's Club Water Polo · Phi Kappa Psi</li>
+        <li>Millikan High School Valedictorian — Gold Robe</li>
       </ul>
     </div>
   </section>
@@ -573,14 +604,14 @@
   <!-- S3 · Cockpit zoom (150vh) -->
   <section class="wf-section align-right" id="wf-cockpit" style="min-height:150vh;">
     <div class="wf-card reveal">
-      <div class="wf-card-eyebrow">Experience · 2024 – Present</div>
-      <div class="wf-card-name">Ocean Lifeguard</div>
-      <div class="wf-card-sub">Long Beach Fire Dept · Marine Safety Division</div>
+      <div class="wf-card-eyebrow">Experience · 2025 – Present</div>
+      <div class="wf-card-name">Co-Founder — Tipsy</div>
+      <div class="wf-card-sub">Biometric drinking-safety iOS app · Live in the App Store</div>
       <div class="wf-divider"></div>
       <ul class="wf-card-lines">
-        <li>Open-ocean emergency response — thousands of beachgoers daily</li>
-        <li>Certified CPR · AED · Advanced First Aid responder</li>
-        <li>100% safety compliance across all Marine Safety assets</li>
+        <li>One of two technical founders — concept to App Store in under a year</li>
+        <li>Personalized limit system and digital buddy feature to reduce high-risk drinking</li>
+        <li>Design, development, and launch with no outside funding or engineering hires</li>
       </ul>
     </div>
   </section>
@@ -588,18 +619,19 @@
   <!-- S4 · Deconstruct (170vh) — exploded view -->
   <section class="wf-section align-left" id="wf-deconstruct" style="min-height:170vh;">
     <div class="wf-card reveal">
-      <div class="wf-card-eyebrow">Experience · Jun – Jul 2024</div>
-      <div class="wf-card-name">Engineering Intern</div>
-      <div class="wf-card-sub">BioGas Engineering · California</div>
+      <div class="wf-card-eyebrow">Project · 2026</div>
+      <div class="wf-card-name">Small-Scale Wind Turbine</div>
+      <div class="wf-card-sub">UC Berkeley · 4-person team</div>
       <div class="wf-divider"></div>
       <ul class="wf-card-lines">
-        <li>Victorville Valley Wastewater Treatment Plant project</li>
-        <li>Biogas capture &amp; conversion system design</li>
-        <li>Industrial-scale CAD-driven engineering workflows</li>
+        <li>1.242 W peak output at 140.7 g under fixed volume and swept-radius constraints</li>
+        <li>SolidWorks FEA deflection predictions validated against physical load testing</li>
+        <li>Traced a 2× sim-vs-measured discrepancy to print infill density and corrected the model</li>
       </ul>
       <div class="wf-card-tags">
-        <span class="wf-card-tag">Rapid Prototyping</span>
-        <span class="wf-card-tag">Systems Thinking</span>
+        <span class="wf-card-tag">SolidWorks · FEA</span>
+        <span class="wf-card-tag">3D Printing</span>
+        <span class="wf-card-tag">Load Testing</span>
       </div>
     </div>
   </section>
@@ -625,33 +657,37 @@
   <div class="marquee-track">
     <span class="marquee-item">UC Berkeley</span>
     <span class="marquee-item">Mechanical Engineering</span>
-    <span class="marquee-item">SolidWorks CAD</span>
+    <span class="marquee-item">Tipsy — Co-Founder</span>
+    <span class="marquee-item">Shipped on the App Store</span>
+    <span class="marquee-item">SolidWorks · FEA</span>
+    <span class="marquee-item">Wind Turbine Design</span>
+    <span class="marquee-item">3D Printing</span>
     <span class="marquee-item">Ocean Lifeguard</span>
+    <span class="marquee-item">EMR Certified</span>
     <span class="marquee-item">Valedictorian</span>
-    <span class="marquee-item">BioGas Engineering</span>
-    <span class="marquee-item">Rapid Prototyping</span>
-    <span class="marquee-item">Bilingual ES EN</span>
-    <span class="marquee-item">Phi Kappa Psi</span>
     <span class="marquee-item">Robotics Founder</span>
+    <span class="marquee-item">Bilingual ES · EN</span>
     <span class="marquee-item">UC Berkeley</span>
     <span class="marquee-item">Mechanical Engineering</span>
-    <span class="marquee-item">SolidWorks CAD</span>
+    <span class="marquee-item">Tipsy — Co-Founder</span>
+    <span class="marquee-item">Shipped on the App Store</span>
+    <span class="marquee-item">SolidWorks · FEA</span>
+    <span class="marquee-item">Wind Turbine Design</span>
+    <span class="marquee-item">3D Printing</span>
     <span class="marquee-item">Ocean Lifeguard</span>
+    <span class="marquee-item">EMR Certified</span>
     <span class="marquee-item">Valedictorian</span>
-    <span class="marquee-item">BioGas Engineering</span>
-    <span class="marquee-item">Rapid Prototyping</span>
-    <span class="marquee-item">Bilingual ES EN</span>
-    <span class="marquee-item">Phi Kappa Psi</span>
     <span class="marquee-item">Robotics Founder</span>
+    <span class="marquee-item">Bilingual ES · EN</span>
   </div>
 </div>
 
 <section id="stats">
   <div class="stats-grid">
-    <div class="stat-item"><div class="stat-number" data-target="4.8">0</div><div class="stat-label">Weighted GPA</div></div>
-    <div class="stat-item"><div class="stat-number" data-target="2">0</div><div class="stat-label">Years Experience</div></div>
+    <div class="stat-item"><div class="stat-number" data-target="1">0</div><div class="stat-label">iOS App Shipped</div></div>
     <div class="stat-item"><div class="stat-number" data-target="2000" data-prefix="$" data-suffix="+">0</div><div class="stat-label">Funding Raised</div></div>
-    <div class="stat-item"><div class="stat-number" data-target="2" data-suffix=" Sports">0</div><div class="stat-label">Team Captain</div></div>
+    <div class="stat-item"><div class="stat-number" data-target="5">0</div><div class="stat-label">Safety Certifications</div></div>
+    <div class="stat-item"><div class="stat-number" data-target="4.8">0</div><div class="stat-label">Weighted GPA · Valedictorian</div></div>
     <div class="stat-item"><div class="stat-number" data-target="2029">0</div><div class="stat-label">Expected Graduation</div></div>
   </div>
 </section>
@@ -671,8 +707,9 @@
             Engineering teaches you another: <em>precision saves them.</em>"
           </p>
           <p class="about-sub">
-            I bring both to every problem I touch — whether it's optimizing a biogas
-            system or responding to a swimmer in distress a half-mile offshore.
+            I bring both to every problem I touch — whether it's shipping an app to the
+            App Store, catching my own FEA model being wrong, or responding to a swimmer
+            in distress a half-mile offshore.
           </p>
           <div class="about-floater">Gold Robe Valedictorian</div>
         </div>
@@ -680,24 +717,28 @@
       <div class="about-text reveal">
         <h3>Engineering meets action.</h3>
         <p>
-          I'm a <strong>Mechanical Engineering student at UC Berkeley</strong> with a background
-          most engineers don't have — I've operated under life-or-death pressure daily as an
-          Ocean Lifeguard for the Long Beach Fire Department Marine Safety Division.
+          I'm a <strong>Mechanical Engineering student at UC Berkeley</strong> who ships.
+          I co-founded <strong>Tipsy</strong>, a biometric drinking-safety iOS app now live in
+          the App Store — taken from concept to release in under a year by two technical
+          founders, with no outside funding and no engineering hires.
         </p>
         <p>
-          I graduated as <strong>Valedictorian (4.8 GPA)</strong> from Millikan High School,
-          captained Water Polo and Swim to All-League honors, and founded a Robotics Club from
-          scratch — raising over $2,000 in funding.
+          On the hardware side I work the full loop: design, simulate, build, test, iterate.
+          I've run <strong>SolidWorks FEA</strong> on a 3D-printed wind turbine, validated it
+          against physical load testing, and tracked down my own model error when the two
+          disagreed by 2×.
         </p>
         <p>
-          At <strong>BioGas Engineering</strong> I gained hands-on design exposure collaborating
-          on the Victorville Valley Wastewater Treatment Plant and optimizing biogas systems.
+          I've also operated under life-or-death pressure as an <strong>Ocean Lifeguard</strong>
+          for the Long Beach Fire Department Marine Safety Division, and tuned
+          <strong>Bioness L300 Go</strong> stimulation systems on post-stroke patients in live
+          gait training at Precision Rehabilitation.
         </p>
         <div class="about-tags">
-          <span class="tag">Quick Decisions</span>
+          <span class="tag">Design → Test → Iterate</span>
           <span class="tag">Calm Under Pressure</span>
+          <span class="tag">Ships Product</span>
           <span class="tag">Team Leadership</span>
-          <span class="tag">Systems Thinking</span>
           <span class="tag">Bilingual</span>
         </div>
       </div>
@@ -715,29 +756,95 @@
     <div class="timeline">
       <div class="timeline-item">
         <div class="timeline-dot"></div>
-        <div class="timeline-date">May 2024 — Present</div>
-        <div class="timeline-role">Ocean Lifeguard</div>
-        <div class="timeline-org">Long Beach Fire Department — Marine Safety Division, CA</div>
+        <div class="timeline-date">2025 — Present</div>
+        <div class="timeline-role">Co-Founder</div>
+        <div class="timeline-org">Tipsy — Berkeley, CA</div>
         <div class="timeline-card">
           <ul>
-            <li>Monitor open-ocean conditions and respond to aquatic emergencies in real time, protecting thousands of beachgoers daily.</li>
-            <li>Conduct systematic equipment inspections to maintain 100% safety compliance across all Marine Safety assets.</li>
-            <li>Administer CPR, AED, and advanced first aid as a certified professional responder under LBFD protocols.</li>
+            <li>Co-founded and shipped a biometric drinking-safety iOS app, now live in the App Store, as one of two technical founders.</li>
+            <li>Designed a personalized limit system and digital buddy feature to reduce high-risk drinking among college students.</li>
+            <li>Took the product from concept to App Store release in under a year — design, development, and launch without outside funding or engineering hires.</li>
           </ul>
         </div>
       </div>
       <div class="timeline-item">
         <div class="timeline-dot"></div>
-        <div class="timeline-date">Jun 2024 — Jul 2024</div>
-        <div class="timeline-role">Engineering Intern</div>
-        <div class="timeline-org">BioGas Engineering — California</div>
+        <div class="timeline-date">May 2026 — Aug 2026</div>
+        <div class="timeline-role">Clinical Technology Intern</div>
+        <div class="timeline-org">Precision Rehabilitation — Long Beach, CA</div>
         <div class="timeline-card">
           <ul>
-            <li>Collaborated with senior engineers on the Victorville Valley Wastewater Treatment Plant project.</li>
-            <li>Assisted in the design and optimization of biogas capture and conversion systems to enhance efficiency and sustainability metrics.</li>
-            <li>Gained hands-on exposure to industrial-scale environmental engineering workflows and CAD-driven design pipelines.</li>
+            <li>Fitted and calibrated Bioness L300 Go functional electrical stimulation systems for patients with post-stroke gait impairment.</li>
+            <li>Tuned stimulation intensity and timing through a tablet interface during live gait training sessions.</li>
+            <li>Logged device parameters across sessions to support clinician assessment of patient response and treatment adjustment.</li>
           </ul>
         </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">May 2024 — Aug 2026</div>
+        <div class="timeline-role">Ocean Lifeguard <span class="timeline-note">Seasonal</span></div>
+        <div class="timeline-org">Long Beach Fire Department — Marine Safety Division, CA</div>
+        <div class="timeline-card">
+          <ul>
+            <li>Prevented and responded to water emergencies through active surveillance and enforcement across public beaches.</li>
+            <li>Served as first responder for on-site medical crises, executing Emergency Medical Response protocols.</li>
+            <li>Certified Emergency Medical Responder (EMR), USLA Open Water Lifeguard, BLS, and CPR/AED for Professional Responders.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">Jun 2023 — Aug 2023</div>
+        <div class="timeline-role">Environmental Engineering Intern</div>
+        <div class="timeline-org">Biogas Engineering — Victorville, CA</div>
+        <div class="timeline-card">
+          <ul>
+            <li>Supported biogas system design and optimization at the Victor Valley Wastewater Reclamation Authority, converting methane and CO<sub>2</sub> from waste streams into usable energy.</li>
+            <li>Compiled daily production data into technical reports used by plant management.</li>
+            <li>Worked alongside senior engineers on operational efficiency improvements to the digestion and gas capture process.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="projects">
+  <div class="proj-wrapper">
+    <div class="section-header reveal">
+      <span class="section-label">Selected Work</span>
+      <h2 class="section-title">Projects</h2>
+      <div class="section-line"></div>
+    </div>
+    <div class="proj-card">
+      <span class="proj-badge">2026 · UC Berkeley · 4-Person Team</span>
+      <div class="proj-title">Small-Scale Wind Turbine</div>
+      <div class="proj-sub">SolidWorks · FEA · 3D Printing · Data Analysis</div>
+      <div class="proj-specs">
+        <div class="proj-spec">
+          <div class="proj-spec-val">1.242<sub>W</sub></div>
+          <div class="proj-spec-label">Peak Output</div>
+        </div>
+        <div class="proj-spec">
+          <div class="proj-spec-val">12.4<sub>N/mm</sub></div>
+          <div class="proj-spec-label">Tower Stiffness</div>
+        </div>
+        <div class="proj-spec">
+          <div class="proj-spec-val">140.7<sub>g</sub></div>
+          <div class="proj-spec-label">Assembly Mass</div>
+        </div>
+      </div>
+      <ul class="proj-list">
+        <li>Designed and 3D-printed a full turbine assembly under fixed volume and swept-radius constraints.</li>
+        <li>Ran SolidWorks FEA to predict tower deflection, then validated those predictions against physical load testing.</li>
+        <li>Diagnosed a 2× discrepancy between simulated and measured deflection, traced the error to print infill density, and corrected the model.</li>
+      </ul>
+      <div class="proj-tags">
+        <span class="tag">Design for Manufacturing</span>
+        <span class="tag">Finite Element Analysis</span>
+        <span class="tag">Physical Load Testing</span>
+        <span class="tag">Rapid Prototyping</span>
       </div>
     </div>
   </div>
@@ -753,38 +860,38 @@
     <div class="skills-grid">
       <div class="skill-card">
         <svg class="skill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <div class="skill-name">SolidWorks CAD</div>
-        <div class="skill-desc">Computer-Aided Design for mechanical components, assemblies, and technical drawings.</div>
-        <div class="skill-bar-wrap"><div class="skill-bar" style="--level:85%"></div></div>
+        <div class="skill-name">SolidWorks · 3D CAD &amp; FEA</div>
+        <div class="skill-desc">Part and assembly modeling, technical drawings, and finite element analysis validated against physical load testing.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" style="--level:88%"></div></div>
       </div>
       <div class="skill-card">
         <svg class="skill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-        <div class="skill-name">Rapid Prototyping</div>
-        <div class="skill-desc">Fast iteration from concept to physical prototype using modern fabrication methods.</div>
-        <div class="skill-bar-wrap"><div class="skill-bar" style="--level:80%"></div></div>
+        <div class="skill-name">3D Printing &amp; Prototyping</div>
+        <div class="skill-desc">Rapid iteration from CAD to printed part, with design-for-manufacturing decisions made at the model stage.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" style="--level:85%"></div></div>
       </div>
       <div class="skill-card">
         <svg class="skill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-        <div class="skill-name">AI-Assisted Dev</div>
-        <div class="skill-desc">Leverages AI tools to accelerate design, development, and problem solving workflows.</div>
-        <div class="skill-bar-wrap"><div class="skill-bar" style="--level:90%"></div></div>
+        <div class="skill-name">Python &amp; Data Analysis</div>
+        <div class="skill-desc">Python and OpenCV for engineering data — processing test results, and turning measurements into conclusions.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" style="--level:80%"></div></div>
       </div>
       <div class="skill-card">
-        <svg class="skill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>
-        <div class="skill-name">Emergency Medical</div>
-        <div class="skill-desc">Certified professional responder — CPR, AED, first aid, and aquatic rescue.</div>
+        <svg class="skill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="10.5" y1="18.5" x2="13.5" y2="18.5"/></svg>
+        <div class="skill-name">iOS &amp; Backend Development</div>
+        <div class="skill-desc">Built and deployed a production iOS app end to end, including server-side features and App Store release.</div>
+        <div class="skill-bar-wrap"><div class="skill-bar" style="--level:82%"></div></div>
+      </div>
+      <div class="skill-card">
+        <svg class="skill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-7 5 14 2.5-7h6"/></svg>
+        <div class="skill-name">Emergency Medical Response</div>
+        <div class="skill-desc">Certified EMR, BLS, CPR/AED for Professional Responders, First Aid, and USLA Open Water Lifeguard.</div>
         <div class="skill-bar-wrap"><div class="skill-bar" style="--level:95%"></div></div>
-      </div>
-      <div class="skill-card">
-        <svg class="skill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg>
-        <div class="skill-name">Ocean Operations</div>
-        <div class="skill-desc">Reading surf conditions, executing open-water rescues, and commanding high-stakes scenes.</div>
-        <div class="skill-bar-wrap"><div class="skill-bar" style="--level:92%"></div></div>
       </div>
       <div class="skill-card">
         <svg class="skill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
         <div class="skill-name">Bilingual (ES / EN)</div>
-        <div class="skill-desc">Full professional fluency in Spanish and English — effective across cultures.</div>
+        <div class="skill-desc">Full professional fluency in Spanish and English — effective across cultures and clinical settings.</div>
         <div class="skill-bar-wrap"><div class="skill-bar" style="--level:100%"></div></div>
       </div>
     </div>
@@ -800,25 +907,25 @@
     </div>
     <div class="edu-wrapper">
       <div class="edu-card">
-        <span class="edu-badge">In Progress · Expected 2029</span>
+        <span class="edu-badge">In Progress · Expected May 2029</span>
         <div class="edu-degree">B.S. Mechanical Engineering</div>
-        <div class="edu-school">University of California, Berkeley</div>
+        <div class="edu-school">University of California, Berkeley — College of Engineering</div>
         <ul class="edu-highlights">
-          <li>3.7 GPA</li>
-          <li>Relevant Courses: Multivariable Calculus, Physics, Engineering 3D Model and Design, Python for Engineers</li>
-          <li>Phi Kappa Psi</li>
-          <li>Professional Development: Wind Turbine</li>
+          <li>3.5 / 4.0 GPA</li>
+          <li>Coursework: Solid Mechanics · 3D CAD &amp; Prototyping · Programming &amp; Data Analysis for Engineers · Linear Algebra &amp; Differential Equations · Multivariable Calculus · Physics for Engineers I &amp; II</li>
+          <li>Cal Men's Club Water Polo</li>
+          <li>Phi Kappa Psi Fraternity</li>
         </ul>
       </div>
       <div class="edu-card">
-        <span class="edu-badge">Graduated 2025</span>
+        <span class="edu-badge">Aug 2021 — Jun 2025</span>
         <div class="edu-degree">High School Diploma</div>
         <div class="edu-school">Millikan High School — Long Beach, CA</div>
         <ul class="edu-highlights">
-          <li>4.8 Weighted GPA / 4.0 Unweighted</li>
-          <li>Gold Robe — Valedictorian</li>
-          <li>Captain: Water Polo &amp; Swim · All-League · Offensive Player of the Year</li>
-          <li>Robotics Club President &amp; Founder — raised $2,000+ in funding</li>
+          <li>Valedictorian — Gold Robe Recipient</li>
+          <li>4.8 Weighted GPA / 4.0 Unweighted · QUEST Program</li>
+          <li>Captain: Water Polo &amp; Swim · 2× All-Moore League · 2024 Offensive Player of the Year</li>
+          <li>Founder &amp; President, Robotics Club — raised $2,000+ in funding</li>
         </ul>
       </div>
     </div>
@@ -828,20 +935,40 @@
 <section id="volunteer">
   <div style="max-width:960px;margin:0 auto;">
     <div class="section-header reveal">
-      <span class="section-label">Community</span>
-      <h2 class="section-title">Giving Back</h2>
+      <span class="section-label">Leadership &amp; Service</span>
+      <h2 class="section-title">Beyond the Classroom</h2>
       <div class="section-line"></div>
     </div>
     <div class="vol-wrapper">
       <div class="vol-card">
-        <svg class="vol-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg>
-        <div class="vol-title">Life Rolls On</div>
-        <div class="vol-desc">Assisted adaptive surfing athletes with physical disabilities, enabling them to experience the freedom of the ocean.</div>
+        <svg class="vol-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M12 4v4"/><circle cx="12" cy="3" r="1"/><path d="M9 13h.01M15 13h.01M9 17h6"/></svg>
+        <div class="vol-title">Millikan Robotics Club</div>
+        <div class="vol-meta">Founder &amp; President · 2023 — 2025</div>
+        <div class="vol-desc">Founded the school's first robotics club and grew it to 8&ndash;10 active members, independently securing $2,000+ in funding for VEX V5 hardware. Led design and build cycles from concept to working machine, and taught new members CAD and assembly fundamentals.</div>
       </div>
       <div class="vol-card">
-        <svg class="vol-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        <div class="vol-title">Precision Rehabilitation</div>
-        <div class="vol-desc">Supported clinical staff in treating patients with spinal cord injuries, gaining deep insight into biomechanical rehabilitation.</div>
+        <svg class="vol-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg>
+        <div class="vol-title">Life Rolls On</div>
+        <div class="vol-meta">Deep Water Instructor, Volunteer · 2022</div>
+        <div class="vol-desc">Assisted adaptive athletes with transfers from wheelchairs into the water and provided in-water stabilization during surf sessions in Santa Monica.</div>
+      </div>
+      <div class="vol-card">
+        <svg class="vol-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3a14 14 0 0 0 0 18M12 3a14 14 0 0 1 0 18M3.5 9h17M3.5 15h17"/></svg>
+        <div class="vol-title">Cal Men's Club Water Polo</div>
+        <div class="vol-meta">Member · 2025 — Present</div>
+        <div class="vol-desc">Compete on UC Berkeley's club water polo team alongside a full engineering course load, after captaining varsity water polo and swim through high school.</div>
+      </div>
+    </div>
+    <div class="interests reveal">
+      <span class="interests-label">Off the Clock</span>
+      <div class="interests-tags">
+        <span class="tag">Surfing</span>
+        <span class="tag">Backpacking</span>
+        <span class="tag">Snowboarding</span>
+        <span class="tag">Competitive Poker</span>
+        <span class="tag">Pickleball</span>
+        <span class="tag">Cooking</span>
+        <span class="tag">Concerts</span>
       </div>
     </div>
   </div>
@@ -854,11 +981,15 @@
       <h2 class="section-title">Get In Touch</h2>
       <div class="section-line"></div>
     </div>
-    <p>Whether you're looking for an engineer who thrives under pressure, a bilingual collaborator, or someone who brings relentless drive to every project — I'd love to hear from you.</p>
+    <p>Whether you're looking for an engineer who ships, someone who stays calm when the stakes are real, or a bilingual collaborator who'll own a problem end to end — I'd love to hear from you.</p>
     <div class="contact-links">
-      <a href="mailto:zaindahdul@gmail.com" class="contact-item">
+      <a href="mailto:zaindahdul@berkeley.edu" class="contact-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        zaindahdul@berkeley.com
+        zaindahdul@berkeley.edu
+      </a>
+      <a href="https://www.linkedin.com/in/zaindahdul" target="_blank" rel="noopener" class="contact-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-11h4v1.5A5 5 0 0 1 16 8z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>
+        LinkedIn
       </a>
       <a href="tel:5626760788" class="contact-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.28h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9a16 16 0 0 0 6 6l1.06-1.06a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -866,7 +997,7 @@
       </a>
       <a href="#" class="contact-item">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        Long Beach, CA
+        Berkeley, CA
       </a>
     </div>
   </div>
@@ -875,7 +1006,7 @@
 <footer>
   <div class="footer-logo">Zain Dahdul</div>
   <span>© 2026 · Mechanical Engineering · UC Berkeley</span>
-  <span>Long Beach, CA</span>
+  <span>Berkeley, CA</span>
 </footer>
 
 <!-- ── Scripts ── -->
@@ -1802,7 +1933,7 @@ drawFlow();
 const io = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: .1 });
-document.querySelectorAll('.reveal,.timeline-item,.skill-card,.edu-card,.vol-card,.stat-item').forEach(el => io.observe(el));
+document.querySelectorAll('.reveal,.timeline-item,.skill-card,.edu-card,.vol-card,.proj-card,.stat-item').forEach(el => io.observe(el));
 
 document.querySelectorAll('.timeline-item').forEach((el,i) => el.style.transitionDelay = i*.12+'s');
 document.querySelectorAll('.skill-card').forEach((el,i) => el.style.transitionDelay = i*.07+'s');
